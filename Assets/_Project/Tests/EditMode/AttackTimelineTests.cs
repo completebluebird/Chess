@@ -106,6 +106,25 @@ namespace ChessBoss.Tests
         }
 
         [Test]
+        public void Add_RunsAStepRelativeToNow_WhileOthersRun()
+        {
+            var timeline = new AttackTimeline();
+            var strikes = new List<Cell>();
+            timeline.Struck += cells => strikes.Add(cells[0]);
+            timeline.Start(new[] { Step(0, 3, A) });
+            timeline.Tick(1);
+
+            timeline.Add(Step(0, 1, B));
+
+            CollectionAssert.AreEquivalent(new[] { A, B }, timeline.WarningCells);
+            Assert.AreEqual(0f, timeline.WarningProgress(B));
+            timeline.Tick(1);
+            CollectionAssert.AreEqual(new[] { B }, strikes);
+            timeline.Tick(1);
+            CollectionAssert.AreEqual(new[] { B, A }, strikes);
+        }
+
+        [Test]
         public void Stop_ClearsWarningsWithoutStriking()
         {
             var timeline = new AttackTimeline();

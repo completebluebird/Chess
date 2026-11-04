@@ -15,6 +15,10 @@ namespace ChessBoss.Tests
         {
             Interval = 2f,
             LaserWarning = 0.8f,
+            LaserShotsMin = 3,
+            LaserShotsMax = 4,
+            LaserShotGap = 0.4f,
+            BiteWeight = 2,
             MeteorWarning = 1.5f,
             MeteorRadius = 2,
             BiteWarning = 0.6f,
@@ -164,8 +168,8 @@ namespace ChessBoss.Tests
             pawn = new PawnMovement(board, new Cell(18, 4));
             boss = new Health(100);
             var attacks = new BossAttacks(pawn, boss, new Random(seed), Settings);
-            for (var i = 0; i < Settings.BreathEvery; i++)
-                attacks.Tick(10);
+            while (!attacks.Timeline.IsRunning || attacks.CurrentAttack != BossAttackKind.Breath)
+                attacks.Tick(0.05f);
             return attacks;
         }
 
@@ -176,10 +180,12 @@ namespace ChessBoss.Tests
             var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), new Health(100), new Random(1), Settings);
 
             var kinds = new List<BossAttackKind>();
-            for (var i = 0; i < 8; i++)
+            var wasRunning = false;
+            while (kinds.Count < 8)
             {
-                attacks.Tick(10);
-                kinds.Add(attacks.CurrentAttack);
+                attacks.Tick(0.05f);
+                if (attacks.Timeline.IsRunning && !wasRunning) kinds.Add(attacks.CurrentAttack);
+                wasRunning = attacks.Timeline.IsRunning;
             }
 
             CollectionAssert.AreEqual(new[] { 3, 7 },

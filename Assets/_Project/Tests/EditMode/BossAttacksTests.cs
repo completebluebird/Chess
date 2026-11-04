@@ -70,6 +70,10 @@ namespace ChessBoss.Tests
         {
             Interval = 2f,
             LaserWarning = 0.8f,
+            LaserShotsMin = 3,
+            LaserShotsMax = 4,
+            LaserShotGap = 0.4f,
+            BiteWeight = 2,
             MeteorWarning = 1.5f,
             MeteorRadius = 2,
             BiteWarning = 0.6f,
@@ -150,32 +154,122 @@ namespace ChessBoss.Tests
             return kinds;
         }
 
-        [Test]
-        public void StayingInPlace_CountsOneHitPerAttack()
+        // Runs the first attack to its end, returning how many laser lines it warned over time.
+        static HashSet<int> RunFirstAttack(BossAttacks attacks, Action beforeTick = null)
         {
-            var attacks = Attacks(1, out _, out _);
-
+            var sectors = new HashSet<int>();
             attacks.Tick(Settings.Interval);
-            attacks.Tick(Settings.MeteorWarning);
+            while (attacks.Timeline.IsRunning)
+            {
+                beforeTick?.Invoke();
+                sectors.UnionWith(attacks.Timeline.WarningCells.Select(cell => cell.X));
+                attacks.Tick(0.05f);
+            }
 
-            Assert.AreEqual(1, attacks.PlayerHits);
+            return sectors;
         }
 
         [Test]
-        public void MovingOutOfTheWarnedCells_Dodges()
+        public void StayingInPlace_MeteorHitsOnce_LaserHitsOncePerShot()
         {
-            for (var seed = 0; seed < 50; seed++)
+            var laserHits = new HashSet<int>();
+            for (var seed = 0; seed < 100; seed++)
+            {
+                var attacks = Attacks(seed, out _, out _);
+                RunFirstAttack(attacks);
+
+                if (attacks.CurrentAttack == BossAttackKind.Meteor)
+                    Assert.AreEqual(1, attacks.PlayerHits, $"seed {seed}");
+                else
+                    laserHits.Add(attacks.PlayerHits);
+            }
+
+            CollectionAssert.AreEquivalent(new[] { Settings.LaserShotsMin, Settings.LaserShotsMax }, laserHits);
+        }
+
+        [Test]
+        public void LaserShots_ChaseThePawn_OneLineForEachCellItMovedTo()
+        {
+            for (var seed = 0; ; seed++)
             {
                 var attacks = Attacks(seed, out var pawn, out _);
                 attacks.Tick(Settings.Interval);
-                var warned = new HashSet<Cell>(attacks.Timeline.WarningCells);
+                if (attacks.CurrentAttack != BossAttackKind.Laser) continue;
 
-                while (warned.Contains(pawn.Position))
-                    Assert.IsTrue(pawn.TryMove(PawnMove.Right));
-                attacks.Tick(Settings.MeteorWarning);
+                var first = attacks.Timeline.WarningCells.First().X;
+                Assert.IsTrue(pawn.TryMove(PawnMove.Right));
+                attacks.Tick(Settings.LaserShotGap);
 
-                Assert.AreEqual(0, attacks.PlayerHits, $"seed {seed}");
+                CollectionAssert.AreEquivalent(
+                    new[] { first, pawn.Position.X }, attacks.Timeline.WarningCells.Select(cell => cell.X).Distinct());
+                return;
             }
+        }
+
+        [Test]
+        public void KeepingOnTheMove_DodgesEveryAttack_AtRealHopSpeed()
+        {
+            for (var seed = 0; seed < 200; seed++)
+            {
+                var attacks = Attacks(seed, out var pawn, out _);
+                var hopReady = 0f;
+                RunFirstAttack(attacks, () =>
+                {
+                    hopReady -= 0.05f;
+                    if (hopReady > 0 || !attacks.Timeline.WarningCells.Contains(pawn.Position)) return;
+                    Assert.IsTrue(pawn.TryMove(PawnMove.Right));
+                    hopReady = HopTime;
+                });
+
+                Assert.AreEqual(0, attacks.PlayerHits, $"seed {seed} {attacks.CurrentAttack}");
+            }
+        }
+
+        // Plays with a still pawn and returns each attack's kind in the order they started.
+        List<BossAttackKind> AttackSequence(int seed, Cell start, int count)
+        {
+            var attacks = Attacks(seed, start, out _, out _);
+            var kinds = new List<BossAttackKind>();
+            var wasRunning = false;
+            while (kinds.Count < count)
+            {
+                attacks.Tick(0.05f);
+                if (attacks.Timeline.IsRunning && !wasRunning) kinds.Add(attacks.CurrentAttack);
+                wasRunning = attacks.Timeline.IsRunning;
+            }
+
+            return kinds;
+        }
+
+        [Test]
+        public void SameBasicAttack_NeverRunsThreeTimesInARow()
+        {
+            foreach (var start in new[] { new Cell(18, 4), new Cell(18, 1) })
+            for (var seed = 0; seed < 100; seed++)
+            {
+                var kinds = AttackSequence(seed, start, 12).Where(kind => kind != BossAttackKind.Breath).ToArray();
+
+                for (var i = 2; i < kinds.Length; i++)
+                    Assert.IsFalse(kinds[i] == kinds[i - 1] && kinds[i] == kinds[i - 2], $"{start} seed {seed}: {string.Join(",", kinds)}");
+            }
+        }
+
+        [Test]
+        public void NearBoss_BiteIsPickedMoreOftenThanEachOtherAttack()
+        {
+            var counts = new Dictionary<BossAttackKind, int>
+            {
+                [BossAttackKind.Laser] = 0, [BossAttackKind.Meteor] = 0, [BossAttackKind.Bite] = 0,
+            };
+            for (var seed = 0; seed < 500; seed++)
+            {
+                var attacks = Attacks(seed, new Cell(18, Settings.BiteDepth), out _, out _);
+                attacks.Tick(Settings.Interval);
+                counts[attacks.CurrentAttack]++;
+            }
+
+            Assert.Greater(counts[BossAttackKind.Bite], counts[BossAttackKind.Laser]);
+            Assert.Greater(counts[BossAttackKind.Bite], counts[BossAttackKind.Meteor]);
         }
 
         [Test]

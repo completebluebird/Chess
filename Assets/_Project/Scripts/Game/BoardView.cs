@@ -12,7 +12,9 @@ namespace ChessBoss.Game
         [SerializeField] Renderer _boss;
 
         readonly Dictionary<Cell, Renderer> _tiles = new Dictionary<Cell, Renderer>();
+        readonly MaterialPropertyBlock _block = new MaterialPropertyBlock();
         Board _board;
+        AttackTimeline _warnings;
 
         public BattleTuning Tuning => _tuning;
         public Board Board => _board ??= new Board(_tuning.boardSectors, _tuning.boardRings);
@@ -47,9 +49,15 @@ namespace ChessBoss.Game
         public void Paint(Renderer target, Color color)
         {
             target.sharedMaterial = _tuning.prototypeMaterial;
-            var block = new MaterialPropertyBlock();
-            block.SetColor(BaseColor, color);
-            target.SetPropertyBlock(block);
+            _block.SetColor(BaseColor, color);
+            target.SetPropertyBlock(_block);
+        }
+
+        public void ShowWarnings(AttackTimeline warnings)
+        {
+            _warnings = warnings;
+            Marks.SetWarning(warnings.WarningCells);
+            RefreshMarks();
         }
 
         public void RefreshMarks()
@@ -138,12 +146,21 @@ namespace ChessBoss.Game
 
         Color ColorOf(Cell cell)
         {
+            var floor = ((cell.X + cell.Y) & 1) == 0 ? _tuning.tileLight : _tuning.tileDark;
             switch (Marks.MarkOf(cell))
             {
-                case CellMark.Warning: return _tuning.warningColor;
+                case CellMark.Warning: return Color.Lerp(floor, _tuning.warningColor, WarningStrength(cell));
                 case CellMark.Attackable: return _tuning.attackableColor;
-                default: return ((cell.X + cell.Y) & 1) == 0 ? _tuning.tileLight : _tuning.tileDark;
+                default: return floor;
             }
+        }
+
+        // Grows stronger toward the strike and pulses, so the time left reads without relying on hue. Ends at full strength.
+        float WarningStrength(Cell cell)
+        {
+            var progress = _warnings.WarningProgress(cell);
+            var pulse = Mathf.PingPong(progress * _tuning.warningBlinks * 2, 1);
+            return Mathf.Lerp(_tuning.warningMinStrength, 1, progress) * (1 - _tuning.warningBlinkDepth * pulse);
         }
     }
 }

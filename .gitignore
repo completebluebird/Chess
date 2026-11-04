@@ -117,3 +117,7 @@ InitTestScene*.unity*
 !tools/CoreTests/CoreTests.csproj
 tools/CoreTests/bin/
 tools/CoreTests/obj/
+
+# Local-only asset pack: license not confirmed for this public repo.
+/Assets/BrokenVector/
+/Assets/BrokenVector.meta

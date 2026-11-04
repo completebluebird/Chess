@@ -426,8 +426,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 456557457}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.2649546, y: 0, z: 0, w: 0.96426094}
-  m_LocalPosition: {x: 0, y: 6, z: -12}
+  m_LocalRotation: {x: 0.24706163, y: 0.000000028878452, z: -0.000000007363012, w: 0.9689998}
+  m_LocalPosition: {x: 0, y: 5, z: -11}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -477,6 +477,7 @@ GameObject:
   - component: {fileID: 650180193}
   - component: {fileID: 650180192}
   - component: {fileID: 650180194}
+  - component: {fileID: 650180195}
   m_Layer: 0
   m_Name: Boss
   m_TagString: Untagged
@@ -570,6 +571,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: ChessBoss.Game::ChessBoss.Game.BossView
   _board: {fileID: 1326090230}
   _body: {fileID: 650180192}
+--- !u!114 &650180195
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 650180190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2630e98d38dc40b4f9807f6908df3259, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ChessBoss.Game::ChessBoss.Game.BossAttackView
+  _board: {fileID: 1326090230}
+  _pawn: {fileID: 438755988}
+  _boss: {fileID: 650180194}
 --- !u!1 &986793780
 GameObject:
   m_ObjectHideFlags: 0
@@ -601,6 +617,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ChessBoss.Game::ChessBoss.Game.DebugHud
   _pawn: {fileID: 438755988}
   _boss: {fileID: 650180194}
+  _attacks: {fileID: 650180195}
 --- !u!4 &986793782
 Transform:
   m_ObjectHideFlags: 0
@@ -780,8 +797,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1384185660}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.26495454, y: 0, z: 0, w: 0.96426094}
-  m_LocalPosition: {x: 0, y: 6, z: -12}
+  m_LocalRotation: {x: 0.24706161, y: 0.000000028878448, z: -0.0000000073630106, w: 0.9689998}
+  m_LocalPosition: {x: 0, y: 5, z: -11}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

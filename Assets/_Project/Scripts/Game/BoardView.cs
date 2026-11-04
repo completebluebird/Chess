@@ -12,7 +12,7 @@ namespace ChessBoss.Game
         [SerializeField] Renderer _boss;
 
         readonly Dictionary<Cell, Renderer> _tiles = new Dictionary<Cell, Renderer>();
-        readonly MaterialPropertyBlock _block = new MaterialPropertyBlock();
+        MaterialPropertyBlock _block;
         Board _board;
         AttackTimeline _warnings;
 
@@ -49,6 +49,8 @@ namespace ChessBoss.Game
         public void Paint(Renderer target, Color color)
         {
             target.sharedMaterial = _tuning.prototypeMaterial;
+            // Unity forbids creating this in a MonoBehaviour field initializer.
+            _block ??= new MaterialPropertyBlock();
             _block.SetColor(BaseColor, color);
             target.SetPropertyBlock(_block);
         }

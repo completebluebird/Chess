@@ -15,6 +15,7 @@ namespace ChessBoss.Core
         readonly Board _board;
         readonly int _hysteresis;
 
+        public Board Board => _board;
         public Cell Position { get; private set; }
         public Cell Forward { get; private set; }
 

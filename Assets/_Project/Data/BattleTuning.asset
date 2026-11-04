@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abc96dbf76c4d6e4daa6ab7f003fc3a0, type: 3}
+  m_Name: BattleTuning
+  m_EditorClassIdentifier: ChessBoss.Game::ChessBoss.Game.BattleTuning
+  boardSize: 13
+  cornerCut: 3
+  cellSize: 1
+  tileThickness: 0.2
+  tileScale: 0.96
+  prototypeMaterial: {fileID: 2100000, guid: 2f87a7e95abf4b444919f15c6aa400fb, type: 2}
+  tileLight: {r: 0.85, g: 0.82, b: 0.75, a: 1}
+  tileDark: {r: 0.25, g: 0.22, b: 0.2, a: 1}
+  bossHeight: 3
+  bossColor: {r: 0.6, g: 0.15, b: 0.15, a: 1}
+  startCell: {x: 0, y: -5}
+  forwardHysteresis: 2
+  moveDuration: 0.15
+  jumpHeight: 0.4
+  squash: 0.2
+  pawnColor: {r: 0.45, g: 0.65, b: 1, a: 1}

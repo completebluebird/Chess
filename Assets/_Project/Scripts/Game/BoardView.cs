@@ -23,11 +23,14 @@ namespace ChessBoss.Game
         void Awake()
         {
             var ringMeshes = new Mesh[Board.Rings];
-            for (var ring = 0; ring < ringMeshes.Length; ring++)
+            for (var ring = Board.BossRing + 1; ring < ringMeshes.Length; ring++)
                 ringMeshes[ring] = BuildTileMesh(ring);
 
+            // The boss's ring has no floor; the boss itself blinks when it can be hit.
             foreach (var cell in Board.Cells)
-                CreateTile(cell, ringMeshes[cell.Y]);
+                if (Board.IsWalkable(cell))
+                    CreateTile(cell, ringMeshes[cell.Y]);
+            CreateBossBase();
 
             _boss.transform.SetPositionAndRotation(
                 transform.position + Vector3.up * (_tuning.bossHeight / 2), Quaternion.identity);
@@ -68,6 +71,31 @@ namespace ChessBoss.Game
         }
 
         float RingRadius(float ring) => _tuning.boardInnerRadius + ring * _tuning.cellSize;
+
+        /// <summary>A flat dark polygon filling the hole inside the first walkable ring.</summary>
+        void CreateBossBase()
+        {
+            var radius = RingRadius(Board.BossRing + 1);
+            var vertices = new List<Vector3> { Vector3.zero };
+            var triangles = new List<int>();
+            for (var i = 0; i < Board.Sectors; i++)
+            {
+                var angle = (i + 0.5f) * SectorAngle;
+                vertices.Add(new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius);
+                // Corners go counterclockwise seen from above, so each triangle lists the next corner first.
+                triangles.AddRange(new[] { 0, (i + 1) % Board.Sectors + 1, i + 1 });
+            }
+
+            var mesh = new Mesh { name = "Boss base" };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+
+            var bossBase = new GameObject("Boss base", typeof(MeshFilter), typeof(MeshRenderer));
+            bossBase.transform.SetParent(transform, false);
+            bossBase.GetComponent<MeshFilter>().sharedMesh = mesh;
+            Paint(bossBase.GetComponent<Renderer>(), _tuning.bossBaseColor);
+        }
 
         /// <summary>A slab shaped like the ring's sector-0 cell, whose inner edge is shorter than its outer edge.</summary>
         Mesh BuildTileMesh(int ring)

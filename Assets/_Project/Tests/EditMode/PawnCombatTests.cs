@@ -66,6 +66,22 @@ namespace ChessBoss.Tests
         }
 
         [Test]
+        public void CanHitBoss_OnlyFromTheRingNextToBoss_FromEveryCell()
+        {
+            foreach (var cell in _board.Cells.Where(_board.IsWalkable))
+                Assert.AreEqual(cell.Y == Board.BossRing + 1, Combat(cell.X, cell.Y, out _).CanHitBoss, cell.ToString());
+        }
+
+        [Test]
+        public void CanHitBoss_IsFalseOnceBossIsDead()
+        {
+            var combat = Combat(18, 1, out var boss);
+            boss.TakeDamage(boss.Max);
+
+            Assert.IsFalse(combat.CanHitBoss);
+        }
+
+        [Test]
         public void Attack_IsBlockedByCooldown_AfterHitOrMiss()
         {
             var hit = Combat(18, 1, out var boss);

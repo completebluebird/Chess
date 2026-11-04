@@ -52,6 +52,7 @@ namespace ChessBoss.Game
             _combat.Tick(Time.deltaTime);
             if (_attackLeft.WasPressedThisFrame()) Attack(PawnAttackSide.Left);
             if (_attackRight.WasPressedThisFrame()) Attack(PawnAttackSide.Right);
+            _boss.SetHittable(_combat.CanHitBoss);
 
             BufferNewPress();
 

@@ -44,6 +44,11 @@ namespace ChessBoss.Core
             }
         }
 
+        public bool CanHitBoss =>
+            !_boss.IsDead
+            && (_movement.Board.IsBossCell(AttackCell(PawnAttackSide.Left))
+                || _movement.Board.IsBossCell(AttackCell(PawnAttackSide.Right)));
+
         public Cell AttackCell(PawnAttackSide side) =>
             _movement.Board.Step(_movement.Position, side == PawnAttackSide.Left ? -1 : 1, -1);
 

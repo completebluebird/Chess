@@ -24,8 +24,10 @@ namespace ChessBoss.Game
         public float bossWidth;
         public float bossHeight;
         public Color bossColor;
+        public Color bossBaseColor;
         public Color bossFlashColor;
         public float bossFlashDuration;
+        public float bossBlinkPeriod;
         public float hitstopDuration;
 
         [Header("Pawn")]

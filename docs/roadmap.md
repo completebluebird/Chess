@@ -5,8 +5,8 @@
 
 ## M0. 프로젝트 셋업
 작업: 템플릿 잔여물·불필요 패키지(Visual Scripting, Collab Proxy, AI Navigation) 제거, `_Project` 폴더와 asmdef 3개, `tools/CoreTests`, 환경 셋업 스크립트(.NET SDK), Input Action 맵(WSAD·QE·123), `Boot`·`Battle` 씬, Cinemachine 설치.
-- [ ] [자동] `dotnet test tools/CoreTests` 샘플 테스트 통과
-- [ ] [자동] Core asmdef에 UnityEngine 참조 없음
+- [x] [자동] `dotnet test tools/CoreTests` 샘플 테스트 통과
+- [x] [자동] Core asmdef에 UnityEngine 참조 없음
 - [ ] [수동] Unity에서 콘솔 에러 없이 열리고 `Battle` 씬 재생
 
 ## M1. 보드와 이동 (큐브 프로토타입)

@@ -112,3 +112,8 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# CoreTests: 프로젝트 파일은 추적하고 빌드 산출물은 제외
+!tools/CoreTests/CoreTests.csproj
+tools/CoreTests/bin/
+tools/CoreTests/obj/

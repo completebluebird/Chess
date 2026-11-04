@@ -72,7 +72,7 @@ namespace ChessBoss.Game
 
         void TryStartHop()
         {
-            var move = _buffered ?? HeldMove();
+            var move = _buffered;
             _buffered = null;
             if (move == null || !_movement.TryMove(move.Value)) return;
 
@@ -95,14 +95,6 @@ namespace ChessBoss.Game
         {
             _board.Marks.SetAttackable(_combat.AttackableCells);
             _board.RefreshMarks();
-        }
-
-        PawnMove? HeldMove()
-        {
-            for (var i = 0; i < _moves.Length; i++)
-                if (_moves[i].IsPressed())
-                    return (PawnMove)i;
-            return null;
         }
 
         void AnimateHop(float progress)

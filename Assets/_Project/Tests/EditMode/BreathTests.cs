@@ -26,7 +26,7 @@ namespace ChessBoss.Tests
             BiteHalfWidth = 2,
             BreathEvery = 4,
             BreathPrep = 2f,
-            BreathStepTime = 0.15f,
+            BreathStepTime = 0.1f,
             BreathWarning = 0.6f,
             BreathBeamWidth = 2,
             BreathWalls = 2,

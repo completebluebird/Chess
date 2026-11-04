@@ -52,7 +52,7 @@ MonoBehaviour:
   biteHalfWidth: 2
   breathEvery: 4
   breathPrep: 2
-  breathStepTime: 0.15
+  breathStepTime: 0.1
   breathWarning: 0.6
   breathBeamWidth: 2
   breathWalls: 2

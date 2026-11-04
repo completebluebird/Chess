@@ -9,7 +9,7 @@
 - 미정 수치는 `docs/design/tuning.md`의 임시값을 쓰고, 코드에 숫자를 박지 않는다.
 
 ## 환경
-- Unity 6000.6.0f1, URP 17.6, Input System, Test Framework, Cinemachine 3, uGUI
+- Unity 6000.6.0f1, URP 17.6, Input System, Test Framework, Cinemachine 6.6 (3.x의 후속, `Unity.Cinemachine` API 동일), uGUI
 - 엔진 버전·렌더 파이프라인을 바꾸지 않는다. 새 패키지는 PR 설명에 이유를 적는다.
 - 에셋스토어 패키지는 쓰지 않는다 (트윈은 `ChessBoss.Game/Tween`의 자체 구현).
 
@@ -41,5 +41,6 @@
 - 바이너리 에셋(fbx, png, wav)은 Git LFS로 올라간다.
 
 ## 자주 쓰는 명령
+- .NET SDK 설치 (Unity 없는 환경): `bash tools/setup-dotnet.sh`
 - Core 테스트: `dotnet test tools/CoreTests`
 - Unity 테스트 (로컬): `Unity -batchmode -projectPath . -runTests -testPlatform EditMode -testResults results.xml`

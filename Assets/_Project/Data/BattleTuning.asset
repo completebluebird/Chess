@@ -31,6 +31,10 @@ MonoBehaviour:
   bossHeight: 3
   bossColor: {r: 0.6, g: 0.15, b: 0.15, a: 1}
   bossBaseColor: {r: 0.08, g: 0.07, b: 0.07, a: 1}
+  bossTurnSpeed: 120
+  bossHeadTurnSpeed: 720
+  bossHeadSize: {x: 1, y: 0.6, z: 2.6}
+  bossHeadColor: {r: 0.9, g: 0.45, b: 0.15, a: 1}
   bossFlashColor: {r: 1, g: 1, b: 1, a: 1}
   bossFlashDuration: 0.1
   bossBlinkPeriod: 0.6
@@ -48,7 +52,7 @@ MonoBehaviour:
   biteHalfWidth: 2
   breathEvery: 4
   breathPrep: 2
-  breathStepTime: 0.15
+  breathStepTime: 0.1
   breathWarning: 0.6
   breathBeamWidth: 2
   breathWalls: 2

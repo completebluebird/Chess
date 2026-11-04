@@ -42,10 +42,13 @@ namespace ChessBoss.Game
             Paint(_boss, _tuning.bossColor);
         }
 
-        public Vector3 CellToWorld(Cell cell)
+        public Vector3 CellToWorld(Cell cell) =>
+            transform.position + SectorDirection(cell.X) * RingRadius(cell.Y + 0.5f);
+
+        public Vector3 SectorDirection(int sector)
         {
-            var angle = cell.X * SectorAngle;
-            return transform.position + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * RingRadius(cell.Y + 0.5f);
+            var angle = sector * SectorAngle;
+            return new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
         }
 
         public void Paint(Renderer target, Color color)

@@ -11,7 +11,10 @@ namespace ChessBoss.Core
         public float WarningStart { get; }
         public float StrikeTime { get; }
 
-        public AttackStep(IReadOnlyList<Cell> cells, float warningStart, float strikeTime)
+        /// <summary>The sector the boss turns its head to for this step.</summary>
+        public int AimSector { get; }
+
+        public AttackStep(IReadOnlyList<Cell> cells, float warningStart, float strikeTime, int? aimSector = null)
         {
             if (cells.Count == 0)
                 throw new ArgumentException("An attack step needs at least one cell.", nameof(cells));
@@ -21,6 +24,7 @@ namespace ChessBoss.Core
             Cells = cells;
             WarningStart = warningStart;
             StrikeTime = strikeTime;
+            AimSector = aimSector ?? cells[0].X;
         }
     }
 
@@ -37,6 +41,9 @@ namespace ChessBoss.Core
 
         public IEnumerable<Cell> WarningCells => ActiveSteps.SelectMany(step => step.Cells);
 
+        /// <summary>Where the step striking next aims, while one is left.</summary>
+        public int? AimSector => IsRunning ? _steps[_next].AimSector : (int?)null;
+
         IEnumerable<AttackStep> ActiveSteps => _steps.Skip(_next).Where(step => step.WarningStart <= _time);
 
         public void Start(IEnumerable<AttackStep> pattern)
@@ -50,7 +57,7 @@ namespace ChessBoss.Core
         /// <summary>Joins a running attack, with the step's times counted from now.</summary>
         public void Add(AttackStep step)
         {
-            var added = new AttackStep(step.Cells, _time + step.WarningStart, _time + step.StrikeTime);
+            var added = new AttackStep(step.Cells, _time + step.WarningStart, _time + step.StrikeTime, step.AimSector);
             var later = _steps.FindIndex(_next, other => other.StrikeTime > added.StrikeTime);
             _steps.Insert(later < 0 ? _steps.Count : later, added);
         }

@@ -43,6 +43,7 @@ namespace ChessBoss.Game
             Attacks.Tick(Time.deltaTime);
             _board.ShowWarnings(Attacks.Timeline);
             _board.ShowWalls();
+            _boss.Face(_pawn.Movement.Position.X, Attacks.AimSector);
         }
     }
 }

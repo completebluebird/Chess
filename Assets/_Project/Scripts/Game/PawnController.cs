@@ -9,13 +9,21 @@ namespace ChessBoss.Game
     {
         [SerializeField] BoardView _board;
         [SerializeField] Renderer _body;
+        [SerializeField] BossView _boss;
 
         readonly InputAction[] _moves = new InputAction[4];
+        InputAction _attackLeft;
+        InputAction _attackRight;
         PawnMovement _movement;
+        PawnCombat _combat;
         Tween _hop;
         Vector3 _hopFrom;
         Vector3 _hopTo;
         PawnMove? _buffered;
+
+        public PawnMovement Movement => _movement;
+        public PawnCombat Combat => _combat;
+        public PawnAttackResult? LastAttack { get; private set; }
 
         void Awake()
         {
@@ -31,10 +39,20 @@ namespace ChessBoss.Game
             _moves[(int)PawnMove.Back] = actions.FindAction("Back", true);
             _moves[(int)PawnMove.Left] = actions.FindAction("Left", true);
             _moves[(int)PawnMove.Right] = actions.FindAction("Right", true);
+            _attackLeft = actions.FindAction("AttackLeft", true);
+            _attackRight = actions.FindAction("AttackRight", true);
+
+            _combat = new PawnCombat(_movement, _boss.Health, tuning.attackDamage, tuning.attackCooldown);
         }
+
+        void Start() => RefreshAttackMarks();
 
         void Update()
         {
+            _combat.Tick(Time.deltaTime);
+            if (_attackLeft.WasPressedThisFrame()) Attack(PawnAttackSide.Left);
+            if (_attackRight.WasPressedThisFrame()) Attack(PawnAttackSide.Right);
+
             BufferNewPress();
 
             if (!_hop.Running)
@@ -60,6 +78,22 @@ namespace ChessBoss.Game
             _hopFrom = transform.position;
             _hopTo = _board.CellToWorld(_movement.Position);
             _hop.Start(_board.Tuning.moveDuration);
+            RefreshAttackMarks();
+        }
+
+        void Attack(PawnAttackSide side)
+        {
+            var result = _combat.TryAttack(side);
+            if (result == PawnAttackResult.OnCooldown) return;
+
+            LastAttack = result;
+            if (result == PawnAttackResult.Hit) _boss.PlayHit();
+        }
+
+        void RefreshAttackMarks()
+        {
+            _board.Marks.SetAttackable(_combat.AttackableCells);
+            _board.RefreshMarks();
         }
 
         PawnMove? HeldMove()

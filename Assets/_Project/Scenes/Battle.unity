@@ -212,6 +212,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ChessBoss.Game::ChessBoss.Game.PawnController
   _board: {fileID: 1326090230}
   _body: {fileID: 1746454073}
+  _boss: {fileID: 650180194}
 --- !u!1 &442427989
 GameObject:
   m_ObjectHideFlags: 0
@@ -475,6 +476,7 @@ GameObject:
   - component: {fileID: 650180191}
   - component: {fileID: 650180193}
   - component: {fileID: 650180192}
+  - component: {fileID: 650180194}
   m_Layer: 0
   m_Name: Boss
   m_TagString: Untagged
@@ -554,6 +556,66 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 650180190}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &650180194
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 650180190}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b6613f4a670fca4eb6d5858e023f3c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ChessBoss.Game::ChessBoss.Game.BossView
+  _board: {fileID: 1326090230}
+  _body: {fileID: 650180192}
+--- !u!1 &986793780
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 986793782}
+  - component: {fileID: 986793781}
+  m_Layer: 0
+  m_Name: DebugHud
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &986793781
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 986793780}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 997e0e6063bbfe74580c69a5bca3fa54, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ChessBoss.Game::ChessBoss.Game.DebugHud
+  _pawn: {fileID: 438755988}
+  _boss: {fileID: 650180194}
+--- !u!4 &986793782
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 986793780}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1326090229
 GameObject:
   m_ObjectHideFlags: 0
@@ -826,3 +888,4 @@ SceneRoots:
   - {fileID: 438755987}
   - {fileID: 322917266}
   - {fileID: 1384185664}
+  - {fileID: 986793782}

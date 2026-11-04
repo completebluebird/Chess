@@ -20,11 +20,20 @@ MonoBehaviour:
   prototypeMaterial: {fileID: 2100000, guid: 2f87a7e95abf4b444919f15c6aa400fb, type: 2}
   tileLight: {r: 0.85, g: 0.82, b: 0.75, a: 1}
   tileDark: {r: 0.25, g: 0.22, b: 0.2, a: 1}
+  attackableColor: {r: 0.25, g: 0.8, b: 0.35, a: 1}
+  warningColor: {r: 0.9, g: 0.1, b: 0.1, a: 1}
+  bossHealth: 100
+  bossWidth: 2.2
   bossHeight: 3
   bossColor: {r: 0.6, g: 0.15, b: 0.15, a: 1}
+  bossFlashColor: {r: 1, g: 1, b: 1, a: 1}
+  bossFlashDuration: 0.1
+  hitstopDuration: 0.05
   startCell: {x: 0, y: -5}
   forwardHysteresis: 2
   moveDuration: 0.15
   jumpHeight: 0.4
   squash: 0.2
   pawnColor: {r: 0.45, g: 0.65, b: 1, a: 1}
+  attackDamage: 2
+  attackCooldown: 0.3

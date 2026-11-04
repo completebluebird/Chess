@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ChessBoss.Core;
 using UnityEngine;
 
@@ -10,20 +11,21 @@ namespace ChessBoss.Game
         [SerializeField] BattleTuning _tuning;
         [SerializeField] Renderer _boss;
 
+        readonly Dictionary<Cell, Renderer> _tiles = new Dictionary<Cell, Renderer>();
         Board _board;
 
         public BattleTuning Tuning => _tuning;
         public Board Board => _board ??= new Board(_tuning.boardSize, _tuning.cornerCut);
+        public CellMarks Marks { get; } = new CellMarks();
 
         void Awake()
         {
             foreach (var cell in Board.Cells)
                 CreateTile(cell);
 
-            var cellSpan = 3 * _tuning.cellSize;
             _boss.transform.SetPositionAndRotation(
                 CellToWorld(default) + Vector3.up * (_tuning.bossHeight / 2), Quaternion.identity);
-            _boss.transform.localScale = new Vector3(cellSpan, _tuning.bossHeight, cellSpan);
+            _boss.transform.localScale = new Vector3(_tuning.bossWidth, _tuning.bossHeight, _tuning.bossWidth);
             Paint(_boss, _tuning.bossColor);
         }
 
@@ -38,6 +40,12 @@ namespace ChessBoss.Game
             target.SetPropertyBlock(block);
         }
 
+        public void RefreshMarks()
+        {
+            foreach (var tile in _tiles)
+                Paint(tile.Value, ColorOf(tile.Key));
+        }
+
         void CreateTile(Cell cell)
         {
             var tile = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -48,8 +56,19 @@ namespace ChessBoss.Game
             var width = _tuning.cellSize * _tuning.tileScale;
             tile.transform.localScale = new Vector3(width, _tuning.tileThickness, width);
 
-            var isLight = ((cell.X + cell.Y) & 1) == 0;
-            Paint(tile.GetComponent<Renderer>(), isLight ? _tuning.tileLight : _tuning.tileDark);
+            var renderer = tile.GetComponent<Renderer>();
+            _tiles.Add(cell, renderer);
+            Paint(renderer, ColorOf(cell));
+        }
+
+        Color ColorOf(Cell cell)
+        {
+            switch (Marks.MarkOf(cell))
+            {
+                case CellMark.Warning: return _tuning.warningColor;
+                case CellMark.Attackable: return _tuning.attackableColor;
+                default: return ((cell.X + cell.Y) & 1) == 0 ? _tuning.tileLight : _tuning.tileDark;
+            }
         }
     }
 }

@@ -15,10 +15,17 @@ namespace ChessBoss.Game
         public Material prototypeMaterial;
         public Color tileLight;
         public Color tileDark;
+        public Color attackableColor;
+        public Color warningColor;
 
         [Header("Boss")]
+        public int bossHealth;
+        public float bossWidth;
         public float bossHeight;
         public Color bossColor;
+        public Color bossFlashColor;
+        public float bossFlashDuration;
+        public float hitstopDuration;
 
         [Header("Pawn")]
         public Vector2Int startCell;
@@ -27,5 +34,7 @@ namespace ChessBoss.Game
         public float jumpHeight;
         public float squash;
         public Color pawnColor;
+        public int attackDamage;
+        public float attackCooldown;
     }
 }

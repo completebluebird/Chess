@@ -18,7 +18,7 @@ namespace ChessBoss.Game
             GUILayout.Label($"Pawn: {_pawn.Movement.Position}");
             GUILayout.Label($"Q: {Reach(board, combat, PawnAttackSide.Left)}  E: {Reach(board, combat, PawnAttackSide.Right)}");
             GUILayout.Label($"Last attack: {_pawn.LastAttack}");
-            GUILayout.Label($"Boss hits on pawn: {_attacks.Attacks?.PlayerHits}");
+            GUILayout.Label($"Boss attack: {_attacks.Attacks?.CurrentAttack}  Hits on pawn: {_attacks.Attacks?.PlayerHits}");
         }
 
         static string Reach(Board board, PawnCombat combat, PawnAttackSide side) =>

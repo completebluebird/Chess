@@ -34,6 +34,11 @@ namespace ChessBoss.Game
         public float hitstopDuration;
         public float attackInterval;
         public float laserWarning;
+        public float meteorWarning;
+        public int meteorRadius;
+        public float biteWarning;
+        public int biteDepth;
+        public int biteHalfWidth;
 
         [Header("Pawn")]
         public Vector2Int startCell;

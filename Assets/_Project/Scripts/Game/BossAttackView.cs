@@ -15,8 +15,16 @@ namespace ChessBoss.Game
         void Start()
         {
             var tuning = _board.Tuning;
-            Attacks = new BossAttacks(
-                _pawn.Movement, _boss.Health, new System.Random(), tuning.laserWarning, tuning.attackInterval);
+            Attacks = new BossAttacks(_pawn.Movement, _boss.Health, new System.Random(), new BossAttackSettings
+            {
+                Interval = tuning.attackInterval,
+                LaserWarning = tuning.laserWarning,
+                MeteorWarning = tuning.meteorWarning,
+                MeteorRadius = tuning.meteorRadius,
+                BiteWarning = tuning.biteWarning,
+                BiteDepth = tuning.biteDepth,
+                BiteHalfWidth = tuning.biteHalfWidth,
+            });
         }
 
         void Update()

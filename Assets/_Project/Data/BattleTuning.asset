@@ -37,6 +37,11 @@ MonoBehaviour:
   hitstopDuration: 0.05
   attackInterval: 2
   laserWarning: 1.2
+  meteorWarning: 1.5
+  meteorRadius: 2
+  biteWarning: 0.6
+  biteDepth: 2
+  biteHalfWidth: 2
   startCell: {x: 18, y: 4}
   moveDuration: 0.15
   jumpHeight: 0.4

@@ -44,5 +44,12 @@ namespace ChessBoss.Core
         /// <summary>The cell the given sectors and rings away. Sectors wrap; rings can leave the board.</summary>
         public Cell Step(Cell from, int sectors, int rings) =>
             new Cell(((from.X + sectors) % Sectors + Sectors) % Sectors, from.Y + rings);
+
+        /// <summary>How many sectors apart two sectors are, going the shorter way around.</summary>
+        public int SectorDistance(int a, int b)
+        {
+            var apart = Math.Abs(a - b);
+            return Math.Min(apart, Sectors - apart);
+        }
     }
 }

@@ -28,6 +28,10 @@ namespace ChessBoss.Game
         public float bossHeight;
         public Color bossColor;
         public Color bossBaseColor;
+        public float bossTurnSpeed;
+        public float bossHeadTurnSpeed;
+        public Vector3 bossHeadSize;
+        public Color bossHeadColor;
         public Color bossFlashColor;
         public float bossFlashDuration;
         public float bossBlinkPeriod;

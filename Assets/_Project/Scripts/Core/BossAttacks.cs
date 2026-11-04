@@ -13,11 +13,11 @@ namespace ChessBoss.Core
         /// <summary>Square areas around the given cells, reaching the radius in cells along both sectors and rings.</summary>
         public static AttackStep Meteor(Board board, IReadOnlyList<Cell> centers, int radius, float warning) =>
             Area(board, cell => centers.Any(center =>
-                board.SectorDistance(cell.X, center.X) <= radius && Math.Abs(cell.Y - center.Y) <= radius), warning);
+                board.SectorDistance(cell.X, center.X) <= radius && Math.Abs(cell.Y - center.Y) <= radius), warning, centers[0].X);
 
         /// <summary>The rings closest to the boss, on the sectors in front of where it faces.</summary>
         public static AttackStep Bite(Board board, int facingSector, int depth, int halfWidth, float warning) =>
-            Area(board, cell => cell.Y <= depth && board.SectorDistance(cell.X, facingSector) <= halfWidth, warning);
+            Area(board, cell => cell.Y <= depth && board.SectorDistance(cell.X, facingSector) <= halfWidth, warning, facingSector);
 
         /// <summary>
         /// A beam turning once around the boss. It runs outward from the boss, so a wall shelters itself and the
@@ -41,7 +41,7 @@ namespace ChessBoss.Core
                         && !walls.Any(wall => wall.X == cell.X && wall.Y <= cell.Y))
                     .ToArray();
                 var strike = settings.BreathPrep + i * settings.BreathStepTime;
-                steps[i] = new AttackStep(cells, strike - settings.BreathWarning, strike);
+                steps[i] = new AttackStep(cells, strike - settings.BreathWarning, strike, beam[0]);
             }
 
             return new BreathPlan(walls, steps);
@@ -80,8 +80,8 @@ namespace ChessBoss.Core
             return chosen;
         }
 
-        static AttackStep Area(Board board, Func<Cell, bool> covers, float warning) =>
-            new AttackStep(board.Cells.Where(cell => board.IsWalkable(cell) && covers(cell)).ToArray(), 0, warning);
+        static AttackStep Area(Board board, Func<Cell, bool> covers, float warning, int? aimSector = null) =>
+            new AttackStep(board.Cells.Where(cell => board.IsWalkable(cell) && covers(cell)).ToArray(), 0, warning, aimSector);
     }
 
     public sealed class BreathPlan
@@ -143,6 +143,9 @@ namespace ChessBoss.Core
         public AttackTimeline Timeline { get; } = new AttackTimeline();
         public BossAttackKind CurrentAttack { get; private set; }
         public int PlayerHits { get; private set; }
+
+        /// <summary>The attack's target while one runs, otherwise the pawn.</summary>
+        public int AimSector => Timeline.AimSector ?? _pawn.Position.X;
 
         public BossAttacks(PawnMovement pawn, Health boss, Random random, BossAttackSettings settings)
         {

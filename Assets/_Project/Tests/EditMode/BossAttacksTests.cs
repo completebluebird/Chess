@@ -225,6 +225,72 @@ namespace ChessBoss.Tests
             }
         }
 
+        BossAttacks AttacksStartingWith(BossAttackKind kind, out PawnMovement pawn)
+        {
+            for (var seed = 0; ; seed++)
+            {
+                var attacks = Attacks(seed, new Cell(18, 2), out pawn, out _);
+                attacks.Tick(Settings.Interval);
+                if (attacks.CurrentAttack == kind) return attacks;
+            }
+        }
+
+        [Test]
+        public void Aim_FollowsThePawn_BetweenAttacks()
+        {
+            var attacks = Attacks(1, out var pawn, out _);
+
+            Assert.AreEqual(pawn.Position.X, attacks.AimSector);
+            Assert.IsTrue(pawn.TryMove(PawnMove.Right));
+            Assert.AreEqual(pawn.Position.X, attacks.AimSector);
+        }
+
+        [TestCase(BossAttackKind.Meteor)]
+        [TestCase(BossAttackKind.Bite)]
+        public void Aim_StaysOnTheAttack_WhenThePawnMovesAway(BossAttackKind kind)
+        {
+            var attacks = AttacksStartingWith(kind, out var pawn);
+            var target = pawn.Position.X;
+
+            Assert.IsTrue(pawn.TryMove(PawnMove.Right));
+
+            Assert.AreEqual(target, attacks.AimSector);
+        }
+
+        [Test]
+        public void Aim_IsTheLaserLineStrikingNext()
+        {
+            var attacks = AttacksStartingWith(BossAttackKind.Laser, out var pawn);
+            var first = pawn.Position.X;
+            Assert.IsTrue(pawn.TryMove(PawnMove.Right));
+
+            attacks.Tick(Settings.LaserShotGap);
+            Assert.AreEqual(first, attacks.AimSector);
+
+            attacks.Tick(Settings.LaserWarning - Settings.LaserShotGap + 0.01f);
+            Assert.AreEqual(pawn.Position.X, attacks.AimSector);
+        }
+
+        [Test]
+        public void Aim_FollowsTheBreathBeamOneSectorPerStep()
+        {
+            var board = new Board(24, 6);
+            var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), new Health(100), new Random(1), Settings);
+            while (!attacks.Timeline.IsRunning || attacks.CurrentAttack != BossAttackKind.Breath)
+                attacks.Tick(0.05f);
+            attacks.Tick(Settings.BreathPrep - 0.01f);
+            var first = attacks.AimSector;
+
+            attacks.Tick(0.02f);
+            var second = attacks.AimSector;
+            attacks.Tick(Settings.BreathStepTime);
+            var third = attacks.AimSector;
+
+            Assert.AreEqual(1, board.SectorDistance(first, second));
+            Assert.AreEqual(1, board.SectorDistance(second, third));
+            Assert.AreEqual(2, board.SectorDistance(first, third));
+        }
+
         // Plays with a still pawn and returns each attack's kind in the order they started.
         List<BossAttackKind> AttackSequence(int seed, Cell start, int count)
         {

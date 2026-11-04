@@ -75,6 +75,13 @@ namespace ChessBoss.Tests
             BiteWarning = 0.6f,
             BiteDepth = 2,
             BiteHalfWidth = 2,
+            BreathEvery = 4,
+            BreathPrep = 2f,
+            BreathStepTime = 0.15f,
+            BreathWarning = 0.6f,
+            BreathBeamWidth = 2,
+            BreathWalls = 4,
+            BreathCoverHops = 5,
         };
 
         readonly Board _board = new Board(24, 6);
@@ -236,11 +243,12 @@ namespace ChessBoss.Tests
                     strikes++;
                     foreach (var cell in cells)
                         Assert.GreaterOrEqual(warnedFor[cell], shortest * 0.8f, $"seed {seed} {cell}");
-                    warnedFor.Clear();
                 };
 
                 for (var i = 0; i < 200; i++)
                 {
+                    // A cell can be struck twice in one attack, so its warning time only resets between attacks.
+                    if (!attacks.Timeline.IsRunning) warnedFor.Clear();
                     var dt = (float)random.NextDouble() * 0.1f + 0.01f;
                     foreach (var cell in attacks.Timeline.WarningCells)
                     {

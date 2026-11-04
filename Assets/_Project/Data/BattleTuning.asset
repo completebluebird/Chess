@@ -42,6 +42,15 @@ MonoBehaviour:
   biteWarning: 0.6
   biteDepth: 2
   biteHalfWidth: 2
+  breathEvery: 4
+  breathPrep: 2
+  breathStepTime: 0.15
+  breathWarning: 0.6
+  breathBeamWidth: 2
+  breathWalls: 4
+  breathCoverHops: 5
+  wallHeight: 1.5
+  wallColor: {r: 0.35, g: 0.38, b: 0.45, a: 1}
   startCell: {x: 18, y: 4}
   moveDuration: 0.15
   jumpHeight: 0.4

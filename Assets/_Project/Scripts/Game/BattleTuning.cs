@@ -39,6 +39,15 @@ namespace ChessBoss.Game
         public float biteWarning;
         public int biteDepth;
         public int biteHalfWidth;
+        public int breathEvery;
+        public float breathPrep;
+        public float breathStepTime;
+        public float breathWarning;
+        public int breathBeamWidth;
+        public int breathWalls;
+        public int breathCoverHops;
+        public float wallHeight;
+        public Color wallColor;
 
         [Header("Pawn")]
         public Vector2Int startCell;

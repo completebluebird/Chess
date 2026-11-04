@@ -11,6 +11,8 @@ namespace ChessBoss.Core
     {
         public const int BossRing = 0;
 
+        readonly HashSet<Cell> _walls = new HashSet<Cell>();
+
         public int Sectors { get; }
         public int Rings { get; }
 
@@ -39,7 +41,37 @@ namespace ChessBoss.Core
 
         public bool IsBossCell(Cell cell) => Contains(cell) && cell.Y == BossRing;
 
-        public bool IsWalkable(Cell cell) => Contains(cell) && !IsBossCell(cell);
+        public bool IsWalkable(Cell cell) => Contains(cell) && !IsBossCell(cell) && !_walls.Contains(cell);
+
+        public IReadOnlyCollection<Cell> Walls => _walls;
+
+        public bool IsWall(Cell cell) => _walls.Contains(cell);
+
+        public void SetWalls(IEnumerable<Cell> walls)
+        {
+            _walls.Clear();
+            _walls.UnionWith(walls);
+        }
+
+        /// <summary>How many one-cell moves each reachable cell is from the start, going around the blocked cells.</summary>
+        public Dictionary<Cell, int> HopsFrom(Cell start, ICollection<Cell> blocked)
+        {
+            var hops = new Dictionary<Cell, int> { [start] = 0 };
+            var queue = new Queue<Cell>();
+            queue.Enqueue(start);
+            while (queue.Count > 0)
+            {
+                var cell = queue.Dequeue();
+                foreach (var next in new[] { Step(cell, 1, 0), Step(cell, -1, 0), Step(cell, 0, 1), Step(cell, 0, -1) })
+                {
+                    if (!IsWalkable(next) || blocked.Contains(next) || hops.ContainsKey(next)) continue;
+                    hops[next] = hops[cell] + 1;
+                    queue.Enqueue(next);
+                }
+            }
+
+            return hops;
+        }
 
         /// <summary>The cell the given sectors and rings away. Sectors wrap; rings can leave the board.</summary>
         public Cell Step(Cell from, int sectors, int rings) =>

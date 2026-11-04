@@ -12,6 +12,8 @@ namespace ChessBoss.Game
         [SerializeField] Renderer _boss;
 
         readonly Dictionary<Cell, Renderer> _tiles = new Dictionary<Cell, Renderer>();
+        readonly Dictionary<Cell, GameObject> _walls = new Dictionary<Cell, GameObject>();
+        readonly List<Cell> _removedWalls = new List<Cell>();
         MaterialPropertyBlock _block;
         Board _board;
         AttackTimeline _warnings;
@@ -53,6 +55,41 @@ namespace ChessBoss.Game
             _block ??= new MaterialPropertyBlock();
             _block.SetColor(BaseColor, color);
             target.SetPropertyBlock(_block);
+        }
+
+        public void ShowWalls()
+        {
+            _removedWalls.Clear();
+            foreach (var wall in _walls)
+                if (!Board.IsWall(wall.Key))
+                    _removedWalls.Add(wall.Key);
+
+            foreach (var cell in _removedWalls)
+            {
+                Destroy(_walls[cell]);
+                _walls.Remove(cell);
+            }
+
+            foreach (var cell in Board.Walls)
+                if (!_walls.ContainsKey(cell))
+                    _walls.Add(cell, CreateWall(cell));
+        }
+
+        GameObject CreateWall(Cell cell)
+        {
+            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            wall.name = $"Wall {cell}";
+            Destroy(wall.GetComponent<Collider>());
+            wall.transform.SetParent(transform, false);
+            wall.transform.SetPositionAndRotation(
+                CellToWorld(cell) + Vector3.up * (_tuning.wallHeight / 2),
+                Quaternion.Euler(0, -cell.X * SectorAngle * Mathf.Rad2Deg, 0));
+            wall.transform.localScale = new Vector3(
+                _tuning.cellSize * _tuning.tileScale,
+                _tuning.wallHeight,
+                RingRadius(cell.Y + 0.5f) * SectorAngle * _tuning.tileScale);
+            Paint(wall.GetComponent<Renderer>(), _tuning.wallColor);
+            return wall;
         }
 
         public void ShowWarnings(AttackTimeline warnings)

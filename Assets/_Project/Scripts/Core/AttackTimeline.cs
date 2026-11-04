@@ -47,6 +47,14 @@ namespace ChessBoss.Core
             _steps.AddRange(pattern.OrderBy(step => step.StrikeTime));
         }
 
+        /// <summary>Joins a running attack, with the step's times counted from now.</summary>
+        public void Add(AttackStep step)
+        {
+            var added = new AttackStep(step.Cells, _time + step.WarningStart, _time + step.StrikeTime);
+            var later = _steps.FindIndex(_next, other => other.StrikeTime > added.StrikeTime);
+            _steps.Insert(later < 0 ? _steps.Count : later, added);
+        }
+
         public void Stop()
         {
             _steps.Clear();

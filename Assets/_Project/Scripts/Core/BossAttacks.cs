@@ -108,6 +108,10 @@ namespace ChessBoss.Core
     {
         public float Interval;
         public float LaserWarning;
+        public int LaserShotsMin;
+        public int LaserShotsMax;
+        public float LaserShotGap;
+        public int BiteWeight;
         public float MeteorWarning;
         public int MeteorRadius;
         public float BiteWarning;
@@ -131,6 +135,10 @@ namespace ChessBoss.Core
         readonly BossAttackSettings _settings;
         float _idle;
         int _attacksStarted;
+        int _laserShotsLeft;
+        float _nextLaserShot;
+        BossAttackKind _lastBasicAttack;
+        int _sameBasicAttackInARow;
 
         public AttackTimeline Timeline { get; } = new AttackTimeline();
         public BossAttackKind CurrentAttack { get; private set; }
@@ -153,11 +161,19 @@ namespace ChessBoss.Core
             if (_boss.IsDead)
             {
                 Timeline.Stop();
+                _laserShotsLeft = 0;
                 _pawn.Board.SetWalls(new Cell[0]);
                 return;
             }
 
             Timeline.Tick(deltaTime);
+            if (_laserShotsLeft > 0)
+            {
+                _nextLaserShot -= deltaTime;
+                if (_nextLaserShot <= 0) FireLaserShot();
+                return;
+            }
+
             if (Timeline.IsRunning) return;
 
             _pawn.Board.SetWalls(new Cell[0]);
@@ -181,37 +197,53 @@ namespace ChessBoss.Core
                 return;
             }
 
-            Timeline.Start(new[] { NextBasicAttack() });
-        }
-
-        AttackStep NextBasicAttack()
-        {
+            CurrentAttack = PickBasicAttack();
             var board = _pawn.Board;
             var position = _pawn.Position;
-            // Bite comes after the always-usable attacks in the enum, so a pawn out of its reach never rolls it.
-            var inBiteReach = position.Y <= _settings.BiteDepth;
-            CurrentAttack = (BossAttackKind)_random.Next(inBiteReach ? 3 : 2);
-
             switch (CurrentAttack)
             {
                 case BossAttackKind.Laser:
-                    return BossPatterns.Laser(board, LaserSectors(), _settings.LaserWarning);
+                    Timeline.Start(new AttackStep[0]);
+                    _laserShotsLeft = _random.Next(_settings.LaserShotsMin, _settings.LaserShotsMax + 1);
+                    _nextLaserShot = 0;
+                    FireLaserShot();
+                    break;
                 case BossAttackKind.Meteor:
-                    return BossPatterns.Meteor(board, MeteorCenters(), _settings.MeteorRadius, _settings.MeteorWarning);
+                    Timeline.Start(new[]
+                    {
+                        BossPatterns.Meteor(board, MeteorCenters(), _settings.MeteorRadius, _settings.MeteorWarning),
+                    });
+                    break;
                 default:
-                    return BossPatterns.Bite(
-                        board, position.X, _settings.BiteDepth, _settings.BiteHalfWidth, _settings.BiteWarning);
+                    Timeline.Start(new[]
+                    {
+                        BossPatterns.Bite(board, position.X, _settings.BiteDepth, _settings.BiteHalfWidth, _settings.BiteWarning),
+                    });
+                    break;
             }
         }
 
-        // One line at the player, sometimes a second one elsewhere.
-        int[] LaserSectors()
+        // Near the boss, bite is favored; no attack runs three times in a row, and breath is decided separately.
+        BossAttackKind PickBasicAttack()
         {
-            var sectors = _pawn.Board.Sectors;
-            var target = _pawn.Position.X;
-            return _random.Next(2) == 0
-                ? new[] { target, (target + 1 + _random.Next(sectors - 1)) % sectors }
-                : new[] { target };
+            var options = new List<BossAttackKind> { BossAttackKind.Laser, BossAttackKind.Meteor };
+            if (_pawn.Position.Y <= _settings.BiteDepth)
+                options.AddRange(Enumerable.Repeat(BossAttackKind.Bite, _settings.BiteWeight));
+            if (_sameBasicAttackInARow >= 2)
+                options.RemoveAll(kind => kind == _lastBasicAttack);
+
+            var picked = options[_random.Next(options.Count)];
+            _sameBasicAttackInARow = picked == _lastBasicAttack ? _sameBasicAttackInARow + 1 : 1;
+            _lastBasicAttack = picked;
+            return picked;
+        }
+
+        // Each shot aims at where the pawn is now, so the line follows a moving pawn.
+        void FireLaserShot()
+        {
+            Timeline.Add(BossPatterns.Laser(_pawn.Board, new[] { _pawn.Position.X }, _settings.LaserWarning));
+            _laserShotsLeft--;
+            _nextLaserShot += _settings.LaserShotGap;
         }
 
         // One meteor at the player, sometimes a second one anywhere.

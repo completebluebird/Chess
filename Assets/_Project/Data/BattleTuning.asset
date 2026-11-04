@@ -37,6 +37,10 @@ MonoBehaviour:
   hitstopDuration: 0.05
   attackInterval: 2
   laserWarning: 0.8
+  laserShotsMin: 3
+  laserShotsMax: 4
+  laserShotGap: 0.4
+  biteWeight: 2
   meteorWarning: 1.5
   meteorRadius: 2
   biteWarning: 0.6

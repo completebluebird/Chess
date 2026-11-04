@@ -19,6 +19,10 @@ namespace ChessBoss.Game
             {
                 Interval = tuning.attackInterval,
                 LaserWarning = tuning.laserWarning,
+                LaserShotsMin = tuning.laserShotsMin,
+                LaserShotsMax = tuning.laserShotsMax,
+                LaserShotGap = tuning.laserShotGap,
+                BiteWeight = tuning.biteWeight,
                 MeteorWarning = tuning.meteorWarning,
                 MeteorRadius = tuning.meteorRadius,
                 BiteWarning = tuning.biteWarning,

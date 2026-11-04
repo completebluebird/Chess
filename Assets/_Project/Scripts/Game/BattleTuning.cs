@@ -34,6 +34,10 @@ namespace ChessBoss.Game
         public float hitstopDuration;
         public float attackInterval;
         public float laserWarning;
+        public int laserShotsMin;
+        public int laserShotsMax;
+        public float laserShotGap;
+        public int biteWeight;
         public float meteorWarning;
         public int meteorRadius;
         public float biteWarning;

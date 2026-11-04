@@ -14,7 +14,7 @@ namespace ChessBoss.Game
             var board = _pawn.Movement.Board;
             var combat = _pawn.Combat;
             GUILayout.Label($"Boss HP: {_boss.Health.Current} / {_boss.Health.Max}");
-            GUILayout.Label($"Pawn: {_pawn.Movement.Position}  Forward: {_pawn.Movement.Forward}");
+            GUILayout.Label($"Pawn: {_pawn.Movement.Position}");
             GUILayout.Label($"Q: {Reach(board, combat, PawnAttackSide.Left)}  E: {Reach(board, combat, PawnAttackSide.Right)}");
             GUILayout.Label($"Last attack: {_pawn.LastAttack}");
         }

@@ -9,40 +9,40 @@ namespace ChessBoss.Tests
         const int Damage = 2;
         const float Cooldown = 0.3f;
 
-        readonly Board _board = new Board(13, 3);
+        readonly Board _board = new Board(24, 6);
 
         PawnCombat Combat(int x, int y, out Health boss)
         {
             boss = new Health(100);
-            return new PawnCombat(new PawnMovement(_board, new Cell(x, y), 2), boss, Damage, Cooldown);
+            return new PawnCombat(new PawnMovement(_board, new Cell(x, y)), boss, Damage, Cooldown);
         }
 
         [Test]
-        public void AttackCells_AreFrontDiagonalsRelativeToForward()
+        public void AttackCells_AreOneRingInward_OneSectorToEachSide()
         {
-            var combat = Combat(0, -5, out _);
+            var combat = Combat(18, 4, out _);
 
-            Assert.AreEqual(new Cell(-1, -4), combat.AttackCell(PawnAttackSide.Left));
-            Assert.AreEqual(new Cell(1, -4), combat.AttackCell(PawnAttackSide.Right));
+            Assert.AreEqual(new Cell(17, 3), combat.AttackCell(PawnAttackSide.Left));
+            Assert.AreEqual(new Cell(19, 3), combat.AttackCell(PawnAttackSide.Right));
         }
 
         [Test]
-        public void AttackCells_FollowForwardAroundTheBoss()
+        public void AttackCells_WrapAcrossTheSectorSeam()
         {
-            var combat = Combat(5, 0, out _);
+            var combat = Combat(0, 4, out _);
 
-            Assert.AreEqual(new Cell(4, -1), combat.AttackCell(PawnAttackSide.Left));
-            Assert.AreEqual(new Cell(4, 1), combat.AttackCell(PawnAttackSide.Right));
+            Assert.AreEqual(new Cell(23, 3), combat.AttackCell(PawnAttackSide.Left));
+            Assert.AreEqual(new Cell(1, 3), combat.AttackCell(PawnAttackSide.Right));
         }
 
         [Test]
-        public void Attack_HitsOnlyWhenDiagonalIsBossCell_FromEveryCell()
+        public void Attack_HitsOnlyFromTheRingNextToBoss_FromEveryCell()
         {
             foreach (var cell in _board.Cells.Where(_board.IsWalkable))
             foreach (var side in new[] { PawnAttackSide.Left, PawnAttackSide.Right })
             {
                 var combat = Combat(cell.X, cell.Y, out var boss);
-                var expectHit = _board.IsBossCell(combat.AttackCell(side));
+                var expectHit = cell.Y == Board.BossRing + 1;
 
                 var result = combat.TryAttack(side);
 
@@ -52,18 +52,23 @@ namespace ChessBoss.Tests
         }
 
         [Test]
-        public void FrontOfBoss_BothDiagonalsCanHit()
+        public void AttackableCells_AreBothAttackCells_FromEveryCell()
         {
-            var combat = Combat(0, -2, out _);
+            foreach (var cell in _board.Cells.Where(_board.IsWalkable))
+            {
+                var combat = Combat(cell.X, cell.Y, out _);
 
-            Assert.IsTrue(_board.IsBossCell(combat.AttackCell(PawnAttackSide.Left)));
-            Assert.IsTrue(_board.IsBossCell(combat.AttackCell(PawnAttackSide.Right)));
+                CollectionAssert.AreEquivalent(
+                    new[] { combat.AttackCell(PawnAttackSide.Left), combat.AttackCell(PawnAttackSide.Right) },
+                    combat.AttackableCells,
+                    cell.ToString());
+            }
         }
 
         [Test]
         public void Attack_IsBlockedByCooldown_AfterHitOrMiss()
         {
-            var hit = Combat(0, -2, out var boss);
+            var hit = Combat(18, 1, out var boss);
             Assert.AreEqual(PawnAttackResult.Hit, hit.TryAttack(PawnAttackSide.Left));
             Assert.AreEqual(PawnAttackResult.OnCooldown, hit.TryAttack(PawnAttackSide.Right));
             Assert.AreEqual(98, boss.Current);
@@ -73,7 +78,7 @@ namespace ChessBoss.Tests
             hit.Tick(Cooldown / 2);
             Assert.AreEqual(PawnAttackResult.Hit, hit.TryAttack(PawnAttackSide.Left));
 
-            var miss = Combat(0, -5, out _);
+            var miss = Combat(18, 4, out _);
             Assert.AreEqual(PawnAttackResult.Miss, miss.TryAttack(PawnAttackSide.Left));
             Assert.AreEqual(PawnAttackResult.OnCooldown, miss.TryAttack(PawnAttackSide.Left));
         }
@@ -81,7 +86,7 @@ namespace ChessBoss.Tests
         [Test]
         public void Attack_DoesNotHitDeadBoss()
         {
-            var combat = Combat(0, -2, out var boss);
+            var combat = Combat(18, 1, out var boss);
             boss.TakeDamage(boss.Max);
 
             Assert.AreEqual(PawnAttackResult.Miss, combat.TryAttack(PawnAttackSide.Left));
@@ -90,7 +95,7 @@ namespace ChessBoss.Tests
         [Test]
         public void RepeatedHits_BringBossToZero()
         {
-            var combat = Combat(0, -2, out var boss);
+            var combat = Combat(18, 1, out var boss);
 
             for (var i = 0; i < boss.Max / Damage; i++)
             {

@@ -29,7 +29,7 @@ namespace ChessBoss.Game
         {
             var tuning = _board.Tuning;
             var start = new Cell(tuning.startCell.x, tuning.startCell.y);
-            _movement = new PawnMovement(_board.Board, start, tuning.forwardHysteresis);
+            _movement = new PawnMovement(_board.Board, start);
             transform.position = _board.CellToWorld(start);
             _board.Paint(_body, tuning.pawnColor);
 

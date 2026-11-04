@@ -7,8 +7,9 @@ namespace ChessBoss.Game
     public sealed class BattleTuning : ScriptableObject
     {
         [Header("Board")]
-        public int boardSize;
-        public int cornerCut;
+        public int boardSectors;
+        public int boardRings;
+        public float boardInnerRadius;
         public float cellSize;
         public float tileThickness;
         public float tileScale;
@@ -29,7 +30,6 @@ namespace ChessBoss.Game
 
         [Header("Pawn")]
         public Vector2Int startCell;
-        public int forwardHysteresis;
         public float moveDuration;
         public float jumpHeight;
         public float squash;

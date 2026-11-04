@@ -44,12 +44,8 @@ namespace ChessBoss.Core
             }
         }
 
-        public Cell AttackCell(PawnAttackSide side)
-        {
-            var forward = _movement.Forward;
-            var left = new Cell(-forward.Y, forward.X);
-            return _movement.Position + forward + (side == PawnAttackSide.Left ? left : new Cell(-left.X, -left.Y));
-        }
+        public Cell AttackCell(PawnAttackSide side) =>
+            _movement.Board.Step(_movement.Position, side == PawnAttackSide.Left ? -1 : 1, -1);
 
         public void Tick(float deltaTime) => _cooldownRemaining = Math.Max(0, _cooldownRemaining - deltaTime);
 

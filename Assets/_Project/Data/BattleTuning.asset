@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abc96dbf76c4d6e4daa6ab7f003fc3a0, type: 3}
   m_Name: BattleTuning
   m_EditorClassIdentifier: ChessBoss.Game::ChessBoss.Game.BattleTuning
-  boardSize: 13
-  cornerCut: 3
+  boardSectors: 24
+  boardRings: 6
+  boardInnerRadius: 1
   cellSize: 1
   tileThickness: 0.2
   tileScale: 0.96
@@ -29,8 +30,7 @@ MonoBehaviour:
   bossFlashColor: {r: 1, g: 1, b: 1, a: 1}
   bossFlashDuration: 0.1
   hitstopDuration: 0.05
-  startCell: {x: 0, y: -5}
-  forwardHysteresis: 2
+  startCell: {x: 18, y: 4}
   moveDuration: 0.15
   jumpHeight: 0.4
   squash: 0.2

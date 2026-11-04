@@ -22,13 +22,13 @@ namespace ChessBoss.Tests
         }
 
         [Test]
-        public void Meteor_IsARoundAreaAroundItsCenter()
+        public void Meteor_IsASquareAroundItsCenter()
         {
             var step = BossPatterns.Meteor(_board, new[] { new Cell(10, 3) }, 2, Warning);
 
-            Assert.AreEqual(13, step.Cells.Count);
-            CollectionAssert.IsSubsetOf(new[] { new Cell(10, 3), new Cell(12, 3), new Cell(11, 4), new Cell(10, 5) }, step.Cells);
-            CollectionAssert.DoesNotContain(step.Cells, new Cell(12, 4));
+            Assert.AreEqual(25, step.Cells.Count);
+            CollectionAssert.IsSubsetOf(new[] { new Cell(10, 3), new Cell(12, 5), new Cell(8, 1), new Cell(12, 1), new Cell(8, 5) }, step.Cells);
+            CollectionAssert.DoesNotContain(step.Cells, new Cell(13, 3));
             Assert.AreEqual(Warning, step.StrikeTime - step.WarningStart, 1e-5f);
         }
 
@@ -69,12 +69,19 @@ namespace ChessBoss.Tests
         static readonly BossAttackSettings Settings = new BossAttackSettings
         {
             Interval = 2f,
-            LaserWarning = 1.2f,
+            LaserWarning = 0.8f,
             MeteorWarning = 1.5f,
             MeteorRadius = 2,
             BiteWarning = 0.6f,
             BiteDepth = 2,
             BiteHalfWidth = 2,
+            BreathEvery = 4,
+            BreathPrep = 2f,
+            BreathStepTime = 0.15f,
+            BreathWarning = 0.6f,
+            BreathBeamWidth = 2,
+            BreathWalls = 2,
+            BreathCoverHops = 5,
         };
 
         readonly Board _board = new Board(24, 6);
@@ -236,11 +243,12 @@ namespace ChessBoss.Tests
                     strikes++;
                     foreach (var cell in cells)
                         Assert.GreaterOrEqual(warnedFor[cell], shortest * 0.8f, $"seed {seed} {cell}");
-                    warnedFor.Clear();
                 };
 
                 for (var i = 0; i < 200; i++)
                 {
+                    // A cell can be struck twice in one attack, so its warning time only resets between attacks.
+                    if (!attacks.Timeline.IsRunning) warnedFor.Clear();
                     var dt = (float)random.NextDouble() * 0.1f + 0.01f;
                     foreach (var cell in attacks.Timeline.WarningCells)
                     {

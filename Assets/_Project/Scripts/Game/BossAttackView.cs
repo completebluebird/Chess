@@ -24,6 +24,13 @@ namespace ChessBoss.Game
                 BiteWarning = tuning.biteWarning,
                 BiteDepth = tuning.biteDepth,
                 BiteHalfWidth = tuning.biteHalfWidth,
+                BreathEvery = tuning.breathEvery,
+                BreathPrep = tuning.breathPrep,
+                BreathStepTime = tuning.breathStepTime,
+                BreathWarning = tuning.breathWarning,
+                BreathBeamWidth = tuning.breathBeamWidth,
+                BreathWalls = tuning.breathWalls,
+                BreathCoverHops = tuning.breathCoverHops,
             });
         }
 
@@ -31,6 +38,7 @@ namespace ChessBoss.Game
         {
             Attacks.Tick(Time.deltaTime);
             _board.ShowWarnings(Attacks.Timeline);
+            _board.ShowWalls();
         }
     }
 }

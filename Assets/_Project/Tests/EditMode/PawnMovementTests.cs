@@ -5,98 +5,75 @@ namespace ChessBoss.Tests
 {
     public class PawnMovementTests
     {
-        const int Margin = 2;
+        const int Sectors = 24;
 
-        static PawnMovement Pawn(int x, int y) => new PawnMovement(new Board(13, 3), new Cell(x, y), Margin);
+        static PawnMovement Pawn(int x, int y) => new PawnMovement(new Board(Sectors, 6), new Cell(x, y));
 
-        [TestCase(5, 0, -1, 0)]
-        [TestCase(-5, 1, 1, 0)]
-        [TestCase(1, 5, 0, -1)]
-        [TestCase(-1, -5, 0, 1)]
-        public void Forward_SnapsToNearestGridDirectionTowardBoss(int x, int y, int fx, int fy)
+        [Test]
+        public void ForwardAndBack_ChangeRing_FromEverySector()
         {
-            Assert.AreEqual(new Cell(fx, fy), Pawn(x, y).Forward);
-        }
+            for (var x = 0; x < Sectors; x++)
+            {
+                var pawn = Pawn(x, 3);
 
-        [TestCase(4, 4, -1, 0, -1, 0, Description = "exact diagonal keeps x")]
-        [TestCase(4, 4, 0, -1, 0, -1, Description = "exact diagonal keeps y")]
-        [TestCase(4, 5, -1, 0, -1, 0, Description = "one cell past the diagonal is not decisive")]
-        [TestCase(3, 5, -1, 0, 0, -1, Description = "two cells past the diagonal switches")]
-        [TestCase(5, 4, 0, -1, 0, -1, Description = "one cell past the other way is not decisive")]
-        [TestCase(5, 3, 0, -1, -1, 0, Description = "two cells past the other way switches")]
-        [TestCase(-3, 5, -1, 0, 0, -1, Description = "a direction pointing away from the boss is dropped")]
-        public void Forward_KeepsPreviousDirectionUntilDecisivelyPastDiagonal(
-            int x, int y, int prevX, int prevY, int fx, int fy)
-        {
-            var result = PawnMovement.SnapForward(new Cell(x, y), new Cell(prevX, prevY), Margin);
-
-            Assert.AreEqual(new Cell(fx, fy), result);
+                Assert.IsTrue(pawn.TryMove(PawnMove.Forward));
+                Assert.AreEqual(new Cell(x, 2), pawn.Position);
+                Assert.IsTrue(pawn.TryMove(PawnMove.Back));
+                Assert.AreEqual(new Cell(x, 3), pawn.Position);
+            }
         }
 
         [Test]
-        public void ForwardAndBack_MoveAlongSnappedDirection()
+        public void Left_LowersSector_RightRaisesSector()
         {
-            var pawn = Pawn(0, -5);
-
-            Assert.IsTrue(pawn.TryMove(PawnMove.Forward));
-            Assert.AreEqual(new Cell(0, -4), pawn.Position);
-            Assert.IsTrue(pawn.TryMove(PawnMove.Back));
-            Assert.AreEqual(new Cell(0, -5), pawn.Position);
-        }
-
-        [Test]
-        public void Left_OrbitsClockwise_RightOrbitsCounterclockwise()
-        {
-            var pawn = Pawn(0, -5);
+            var pawn = Pawn(18, 4);
 
             Assert.IsTrue(pawn.TryMove(PawnMove.Left));
-            Assert.AreEqual(new Cell(-1, -5), pawn.Position);
+            Assert.AreEqual(new Cell(17, 4), pawn.Position);
             Assert.IsTrue(pawn.TryMove(PawnMove.Right));
-            Assert.AreEqual(new Cell(0, -5), pawn.Position);
+            Assert.AreEqual(new Cell(18, 4), pawn.Position);
         }
 
         [Test]
         public void Forward_IntoBoss_IsBlocked()
         {
-            var pawn = Pawn(0, -2);
+            var pawn = Pawn(18, 1);
 
             Assert.IsFalse(pawn.TryMove(PawnMove.Forward));
-            Assert.AreEqual(new Cell(0, -2), pawn.Position);
+            Assert.AreEqual(new Cell(18, 1), pawn.Position);
         }
 
         [Test]
         public void Back_OffBoard_IsBlocked()
         {
-            var pawn = Pawn(0, -6);
+            var pawn = Pawn(18, 5);
 
             Assert.IsFalse(pawn.TryMove(PawnMove.Back));
-            Assert.AreEqual(new Cell(0, -6), pawn.Position);
+            Assert.AreEqual(new Cell(18, 5), pawn.Position);
         }
 
-        [TestCase(0, -2)]
-        [TestCase(0, -6)]
-        [TestCase(3, 6)]
-        [TestCase(2, 2)]
-        public void LeftOnly_CirclesBossOnce_WithoutLeavingBoard(int x, int y)
+        [Test]
+        public void Start_OnBossRing_Throws()
         {
-            var board = new Board(13, 3);
-            var pawn = new PawnMovement(board, new Cell(x, y), Margin);
-            var ringLength = board.Ring(board.RingOf(pawn.Position)).Count;
-            var start = pawn.Position;
-            var turned = 0.0;
+            Assert.Throws<System.ArgumentException>(() => Pawn(0, Board.BossRing));
+        }
 
-            for (var i = 0; i < ringLength; i++)
+        [TestCase(PawnMove.Left)]
+        [TestCase(PawnMove.Right)]
+        public void Sidestep_CirclesBossOnce_StayingOnItsRing(PawnMove move)
+        {
+            for (var y = 1; y < 6; y++)
             {
-                var from = pawn.Position;
-                Assert.IsTrue(pawn.TryMove(PawnMove.Left));
-                Assert.IsTrue(board.IsWalkable(pawn.Position));
-                turned += System.Math.Atan2(
-                    from.X * pawn.Position.Y - from.Y * pawn.Position.X,
-                    from.X * pawn.Position.X + from.Y * pawn.Position.Y);
-            }
+                var pawn = Pawn(18, y);
 
-            Assert.AreEqual(start, pawn.Position);
-            Assert.AreEqual(-2 * System.Math.PI, turned, 1e-9);
+                for (var i = 0; i < Sectors; i++)
+                {
+                    Assert.IsTrue(pawn.TryMove(move));
+                    Assert.AreEqual(y, pawn.Position.Y);
+                }
+
+                Assert.AreEqual(new Cell(18, y), pawn.Position);
+            }
         }
     }
 }

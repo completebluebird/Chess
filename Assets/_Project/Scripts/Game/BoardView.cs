@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ChessBoss.Core;
 using UnityEngine;
 
@@ -10,25 +11,38 @@ namespace ChessBoss.Game
         [SerializeField] BattleTuning _tuning;
         [SerializeField] Renderer _boss;
 
+        readonly Dictionary<Cell, Renderer> _tiles = new Dictionary<Cell, Renderer>();
         Board _board;
 
         public BattleTuning Tuning => _tuning;
-        public Board Board => _board ??= new Board(_tuning.boardSize, _tuning.cornerCut);
+        public Board Board => _board ??= new Board(_tuning.boardSectors, _tuning.boardRings);
+        public CellMarks Marks { get; } = new CellMarks();
+
+        float SectorAngle => 2 * Mathf.PI / Board.Sectors;
 
         void Awake()
         {
-            foreach (var cell in Board.Cells)
-                CreateTile(cell);
+            var ringMeshes = new Mesh[Board.Rings];
+            for (var ring = Board.BossRing + 1; ring < ringMeshes.Length; ring++)
+                ringMeshes[ring] = BuildTileMesh(ring);
 
-            var cellSpan = 3 * _tuning.cellSize;
+            // The boss's ring has no floor; the boss itself blinks when it can be hit.
+            foreach (var cell in Board.Cells)
+                if (Board.IsWalkable(cell))
+                    CreateTile(cell, ringMeshes[cell.Y]);
+            CreateBossBase();
+
             _boss.transform.SetPositionAndRotation(
-                CellToWorld(default) + Vector3.up * (_tuning.bossHeight / 2), Quaternion.identity);
-            _boss.transform.localScale = new Vector3(cellSpan, _tuning.bossHeight, cellSpan);
+                transform.position + Vector3.up * (_tuning.bossHeight / 2), Quaternion.identity);
+            _boss.transform.localScale = new Vector3(_tuning.bossWidth, _tuning.bossHeight, _tuning.bossWidth);
             Paint(_boss, _tuning.bossColor);
         }
 
-        public Vector3 CellToWorld(Cell cell) =>
-            transform.position + new Vector3(cell.X, 0, cell.Y) * _tuning.cellSize;
+        public Vector3 CellToWorld(Cell cell)
+        {
+            var angle = cell.X * SectorAngle;
+            return transform.position + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * RingRadius(cell.Y + 0.5f);
+        }
 
         public void Paint(Renderer target, Color color)
         {
@@ -38,18 +52,98 @@ namespace ChessBoss.Game
             target.SetPropertyBlock(block);
         }
 
-        void CreateTile(Cell cell)
+        public void RefreshMarks()
         {
-            var tile = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            tile.name = $"Tile {cell}";
-            Destroy(tile.GetComponent<Collider>());
-            tile.transform.SetParent(transform, false);
-            tile.transform.position = CellToWorld(cell) + Vector3.down * (_tuning.tileThickness / 2);
-            var width = _tuning.cellSize * _tuning.tileScale;
-            tile.transform.localScale = new Vector3(width, _tuning.tileThickness, width);
+            foreach (var tile in _tiles)
+                Paint(tile.Value, ColorOf(tile.Key));
+        }
 
-            var isLight = ((cell.X + cell.Y) & 1) == 0;
-            Paint(tile.GetComponent<Renderer>(), isLight ? _tuning.tileLight : _tuning.tileDark);
+        void CreateTile(Cell cell, Mesh mesh)
+        {
+            var tile = new GameObject($"Tile {cell}", typeof(MeshFilter), typeof(MeshRenderer));
+            tile.transform.SetParent(transform, false);
+            tile.transform.localRotation = Quaternion.Euler(0, -cell.X * SectorAngle * Mathf.Rad2Deg, 0);
+            tile.GetComponent<MeshFilter>().sharedMesh = mesh;
+
+            var renderer = tile.GetComponent<Renderer>();
+            _tiles.Add(cell, renderer);
+            Paint(renderer, ColorOf(cell));
+        }
+
+        float RingRadius(float ring) => _tuning.boardInnerRadius + ring * _tuning.cellSize;
+
+        /// <summary>A flat dark polygon filling the hole inside the first walkable ring.</summary>
+        void CreateBossBase()
+        {
+            var radius = RingRadius(Board.BossRing + 1);
+            var vertices = new List<Vector3> { Vector3.zero };
+            var triangles = new List<int>();
+            for (var i = 0; i < Board.Sectors; i++)
+            {
+                var angle = (i + 0.5f) * SectorAngle;
+                vertices.Add(new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius);
+                // Corners go counterclockwise seen from above, so each triangle lists the next corner first.
+                triangles.AddRange(new[] { 0, (i + 1) % Board.Sectors + 1, i + 1 });
+            }
+
+            var mesh = new Mesh { name = "Boss base" };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+
+            var bossBase = new GameObject("Boss base", typeof(MeshFilter), typeof(MeshRenderer));
+            bossBase.transform.SetParent(transform, false);
+            bossBase.GetComponent<MeshFilter>().sharedMesh = mesh;
+            Paint(bossBase.GetComponent<Renderer>(), _tuning.bossBaseColor);
+        }
+
+        /// <summary>A slab shaped like the ring's sector-0 cell, whose inner edge is shorter than its outer edge.</summary>
+        Mesh BuildTileMesh(int ring)
+        {
+            var halfAngle = SectorAngle / 2;
+            var center = new Vector3(RingRadius(ring + 0.5f), 0, 0);
+            Vector3 Corner(float radius, float side) =>
+                center + (new Vector3(radius * Mathf.Cos(halfAngle), 0, side * radius * Mathf.Sin(halfAngle)) - center) * _tuning.tileScale;
+
+            // Clockwise seen from above.
+            var top = new[]
+            {
+                Corner(RingRadius(ring), -1), Corner(RingRadius(ring), 1),
+                Corner(RingRadius(ring + 1), 1), Corner(RingRadius(ring + 1), -1),
+            };
+            var down = Vector3.down * _tuning.tileThickness;
+            var vertices = new List<Vector3>();
+            var triangles = new List<int>();
+            void AddQuad(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+            {
+                var start = vertices.Count;
+                vertices.AddRange(new[] { a, b, c, d });
+                triangles.AddRange(new[] { start, start + 1, start + 2, start, start + 2, start + 3 });
+            }
+
+            AddQuad(top[0], top[1], top[2], top[3]);
+            for (var i = 0; i < top.Length; i++)
+            {
+                var from = top[i];
+                var to = top[(i + 1) % top.Length];
+                AddQuad(to, from, from + down, to + down);
+            }
+
+            var mesh = new Mesh { name = $"Tile ring {ring}" };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            return mesh;
+        }
+
+        Color ColorOf(Cell cell)
+        {
+            switch (Marks.MarkOf(cell))
+            {
+                case CellMark.Warning: return _tuning.warningColor;
+                case CellMark.Attackable: return _tuning.attackableColor;
+                default: return ((cell.X + cell.Y) & 1) == 0 ? _tuning.tileLight : _tuning.tileDark;
+            }
         }
     }
 }

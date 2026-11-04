@@ -7,25 +7,36 @@ namespace ChessBoss.Game
     public sealed class BattleTuning : ScriptableObject
     {
         [Header("Board")]
-        public int boardSize;
-        public int cornerCut;
+        public int boardSectors;
+        public int boardRings;
+        public float boardInnerRadius;
         public float cellSize;
         public float tileThickness;
         public float tileScale;
         public Material prototypeMaterial;
         public Color tileLight;
         public Color tileDark;
+        public Color attackableColor;
+        public Color warningColor;
 
         [Header("Boss")]
+        public int bossHealth;
+        public float bossWidth;
         public float bossHeight;
         public Color bossColor;
+        public Color bossBaseColor;
+        public Color bossFlashColor;
+        public float bossFlashDuration;
+        public float bossBlinkPeriod;
+        public float hitstopDuration;
 
         [Header("Pawn")]
         public Vector2Int startCell;
-        public int forwardHysteresis;
         public float moveDuration;
         public float jumpHeight;
         public float squash;
         public Color pawnColor;
+        public int attackDamage;
+        public float attackCooldown;
     }
 }

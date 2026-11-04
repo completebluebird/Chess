@@ -10,14 +10,10 @@ namespace ChessBoss.Core
         public static AttackStep Laser(Board board, IEnumerable<int> sectors, float warning) =>
             Area(board, cell => sectors.Contains(cell.X), warning);
 
-        /// <summary>Round areas around the given cells, measured in cells.</summary>
+        /// <summary>Square areas around the given cells, reaching the radius in cells along both sectors and rings.</summary>
         public static AttackStep Meteor(Board board, IReadOnlyList<Cell> centers, int radius, float warning) =>
             Area(board, cell => centers.Any(center =>
-            {
-                var sectors = board.SectorDistance(cell.X, center.X);
-                var rings = cell.Y - center.Y;
-                return sectors * sectors + rings * rings <= radius * radius;
-            }), warning);
+                board.SectorDistance(cell.X, center.X) <= radius && Math.Abs(cell.Y - center.Y) <= radius), warning);
 
         /// <summary>The rings closest to the boss, on the sectors in front of where it faces.</summary>
         public static AttackStep Bite(Board board, int facingSector, int depth, int halfWidth, float warning) =>

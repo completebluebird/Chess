@@ -14,7 +14,7 @@ namespace ChessBoss.Tests
         static readonly BossAttackSettings Settings = new BossAttackSettings
         {
             Interval = 2f,
-            LaserWarning = 1.2f,
+            LaserWarning = 0.8f,
             MeteorWarning = 1.5f,
             MeteorRadius = 2,
             BiteWarning = 0.6f,
@@ -25,7 +25,7 @@ namespace ChessBoss.Tests
             BreathStepTime = 0.15f,
             BreathWarning = 0.6f,
             BreathBeamWidth = 2,
-            BreathWalls = 4,
+            BreathWalls = 2,
             BreathCoverHops = 5,
         };
 

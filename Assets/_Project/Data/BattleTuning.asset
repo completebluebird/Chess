@@ -36,7 +36,7 @@ MonoBehaviour:
   bossBlinkPeriod: 0.6
   hitstopDuration: 0.05
   attackInterval: 2
-  laserWarning: 1.2
+  laserWarning: 0.8
   meteorWarning: 1.5
   meteorRadius: 2
   biteWarning: 0.6
@@ -47,7 +47,7 @@ MonoBehaviour:
   breathStepTime: 0.15
   breathWarning: 0.6
   breathBeamWidth: 2
-  breathWalls: 4
+  breathWalls: 2
   breathCoverHops: 5
   wallHeight: 1.5
   wallColor: {r: 0.35, g: 0.38, b: 0.45, a: 1}

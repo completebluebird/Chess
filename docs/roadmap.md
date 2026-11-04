@@ -1,7 +1,7 @@
 # 로드맵 (M0~M10)
 
 [자동] = Claude Code가 테스트로 확인, [수동] = 박범혁이 Unity에서 확인. 마일스톤 1개 = 스레드 1개, 기능 1개 = PR 1개.
-현재 마일스톤: **M2**
+현재 마일스톤: **M3**
 
 ## M0. 프로젝트 셋업
 작업: 템플릿 잔여물·불필요 패키지(Visual Scripting, Collab Proxy, AI Navigation) 제거, `_Project` 폴더와 asmdef 3개, `tools/CoreTests`, 환경 셋업 스크립트(.NET SDK), Input Action 맵(WSAD·QE·123), `Boot`·`Battle` 씬, Cinemachine 설치.

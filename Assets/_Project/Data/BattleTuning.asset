@@ -23,6 +23,9 @@ MonoBehaviour:
   tileDark: {r: 0.25, g: 0.22, b: 0.2, a: 1}
   attackableColor: {r: 0.25, g: 0.8, b: 0.35, a: 1}
   warningColor: {r: 0.9, g: 0.1, b: 0.1, a: 1}
+  warningMinStrength: 0.3
+  warningBlinks: 4
+  warningBlinkDepth: 0.6
   bossHealth: 100
   bossWidth: 2.8
   bossHeight: 3
@@ -32,6 +35,8 @@ MonoBehaviour:
   bossFlashDuration: 0.1
   bossBlinkPeriod: 0.6
   hitstopDuration: 0.05
+  attackInterval: 2
+  laserWarning: 1.2
   startCell: {x: 18, y: 4}
   moveDuration: 0.15
   jumpHeight: 0.4

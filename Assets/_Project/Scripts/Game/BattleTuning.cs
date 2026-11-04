@@ -18,6 +18,9 @@ namespace ChessBoss.Game
         public Color tileDark;
         public Color attackableColor;
         public Color warningColor;
+        public float warningMinStrength;
+        public int warningBlinks;
+        public float warningBlinkDepth;
 
         [Header("Boss")]
         public int bossHealth;
@@ -29,6 +32,8 @@ namespace ChessBoss.Game
         public float bossFlashDuration;
         public float bossBlinkPeriod;
         public float hitstopDuration;
+        public float attackInterval;
+        public float laserWarning;
 
         [Header("Pawn")]
         public Vector2Int startCell;

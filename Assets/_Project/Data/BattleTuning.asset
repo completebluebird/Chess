@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BattleTuning
   m_EditorClassIdentifier: ChessBoss.Game::ChessBoss.Game.BattleTuning
   boardSectors: 24
-  boardRings: 6
+  boardRings: 8
   boardInnerRadius: 1
   cellSize: 1
   tileThickness: 0.2

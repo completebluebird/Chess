@@ -10,14 +10,14 @@ namespace ChessBoss.Tests
     {
         const float Warning = 1f;
 
-        readonly Board _board = new Board(24, 6);
+        readonly Board _board = new Board(24, 8);
 
         [Test]
         public void Laser_CoversEveryWalkableRingOfItsSectors()
         {
             var step = BossPatterns.Laser(_board, new[] { 5 }, Warning);
 
-            CollectionAssert.AreEquivalent(Enumerable.Range(1, 5).Select(ring => new Cell(5, ring)), step.Cells);
+            CollectionAssert.AreEquivalent(Enumerable.Range(1, 7).Select(ring => new Cell(5, ring)), step.Cells);
             Assert.AreEqual(Warning, step.StrikeTime - step.WarningStart, 1e-5f);
         }
 
@@ -88,7 +88,7 @@ namespace ChessBoss.Tests
             BreathCoverHops = 5,
         };
 
-        readonly Board _board = new Board(24, 6);
+        readonly Board _board = new Board(24, 8);
 
         BossAttacks Attacks(int seed, Cell start, out PawnMovement pawn, out Health boss)
         {
@@ -274,7 +274,7 @@ namespace ChessBoss.Tests
         [Test]
         public void Aim_FollowsTheBreathBeamOneSectorPerStep()
         {
-            var board = new Board(24, 6);
+            var board = new Board(24, 8);
             var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), new Health(100), new Random(1), Settings);
             while (!attacks.Timeline.IsRunning || attacks.CurrentAttack != BossAttackKind.Breath)
                 attacks.Tick(0.05f);

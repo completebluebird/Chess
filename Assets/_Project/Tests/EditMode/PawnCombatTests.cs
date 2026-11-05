@@ -7,14 +7,13 @@ namespace ChessBoss.Tests
     public class PawnCombatTests
     {
         const int Damage = 2;
-        const float Cooldown = 0.3f;
 
-        readonly Board _board = new Board(24, 6);
+        readonly Board _board = new Board(24, 8);
 
         PawnCombat Combat(int x, int y, out Health boss)
         {
             boss = new Health(100);
-            return new PawnCombat(new PawnMovement(_board, new Cell(x, y)), boss, Damage, Cooldown);
+            return new PawnCombat(new PawnMovement(_board, new Cell(x, y)), boss, Damage);
         }
 
         [Test]
@@ -44,7 +43,7 @@ namespace ChessBoss.Tests
                 var combat = Combat(cell.X, cell.Y, out var boss);
                 var expectHit = cell.Y == Board.BossRing + 1;
 
-                var result = combat.TryAttack(side);
+                var result = combat.Attack(side);
 
                 Assert.AreEqual(expectHit ? PawnAttackResult.Hit : PawnAttackResult.Miss, result, $"{cell} {side}");
                 Assert.AreEqual(expectHit ? 98 : 100, boss.Current, $"{cell} {side}");
@@ -82,30 +81,12 @@ namespace ChessBoss.Tests
         }
 
         [Test]
-        public void Attack_IsBlockedByCooldown_AfterHitOrMiss()
-        {
-            var hit = Combat(18, 1, out var boss);
-            Assert.AreEqual(PawnAttackResult.Hit, hit.TryAttack(PawnAttackSide.Left));
-            Assert.AreEqual(PawnAttackResult.OnCooldown, hit.TryAttack(PawnAttackSide.Right));
-            Assert.AreEqual(98, boss.Current);
-
-            hit.Tick(Cooldown / 2);
-            Assert.AreEqual(PawnAttackResult.OnCooldown, hit.TryAttack(PawnAttackSide.Left));
-            hit.Tick(Cooldown / 2);
-            Assert.AreEqual(PawnAttackResult.Hit, hit.TryAttack(PawnAttackSide.Left));
-
-            var miss = Combat(18, 4, out _);
-            Assert.AreEqual(PawnAttackResult.Miss, miss.TryAttack(PawnAttackSide.Left));
-            Assert.AreEqual(PawnAttackResult.OnCooldown, miss.TryAttack(PawnAttackSide.Left));
-        }
-
-        [Test]
         public void Attack_DoesNotHitDeadBoss()
         {
             var combat = Combat(18, 1, out var boss);
             boss.TakeDamage(boss.Max);
 
-            Assert.AreEqual(PawnAttackResult.Miss, combat.TryAttack(PawnAttackSide.Left));
+            Assert.AreEqual(PawnAttackResult.Miss, combat.Attack(PawnAttackSide.Left));
         }
 
         [Test]
@@ -114,10 +95,7 @@ namespace ChessBoss.Tests
             var combat = Combat(18, 1, out var boss);
 
             for (var i = 0; i < boss.Max / Damage; i++)
-            {
-                Assert.AreEqual(PawnAttackResult.Hit, combat.TryAttack(PawnAttackSide.Left));
-                combat.Tick(Cooldown);
-            }
+                Assert.AreEqual(PawnAttackResult.Hit, combat.Attack(PawnAttackSide.Left));
 
             Assert.AreEqual(0, boss.Current);
             Assert.IsTrue(boss.IsDead);

@@ -16,10 +16,11 @@ namespace ChessBoss.Game
         InputAction _attackRight;
         PawnMovement _movement;
         PawnCombat _combat;
+        PawnActions _actions;
         Tween _hop;
         Vector3 _hopFrom;
         Vector3 _hopTo;
-        PawnMove? _buffered;
+        PawnMove? _lastPressed;
 
         public PawnMovement Movement => _movement;
         public PawnCombat Combat => _combat;
@@ -42,41 +43,53 @@ namespace ChessBoss.Game
             _attackLeft = actions.FindAction("AttackLeft", true);
             _attackRight = actions.FindAction("AttackRight", true);
 
-            _combat = new PawnCombat(_movement, _boss.Health, tuning.attackDamage, tuning.attackCooldown);
+            _combat = new PawnCombat(_movement, _boss.Health, tuning.attackDamage);
+            _actions = new PawnActions(_movement, _combat, tuning.moveCooldown, tuning.attackCooldown);
         }
 
         void Start() => RefreshAttackMarks();
 
         void Update()
         {
-            _combat.Tick(Time.deltaTime);
+            _actions.Tick(Time.deltaTime);
             if (_attackLeft.WasPressedThisFrame()) Attack(PawnAttackSide.Left);
             if (_attackRight.WasPressedThisFrame()) Attack(PawnAttackSide.Right);
             _boss.SetHittable(_combat.CanHitBoss);
 
-            BufferNewPress();
-
-            if (!_hop.Running)
-                TryStartHop();
+            var move = HeldMove();
+            if (move != null) TryStartHop(move.Value);
 
             if (_hop.Running)
                 AnimateHop(_hop.Tick(Time.deltaTime));
         }
 
-        void BufferNewPress()
+        // The key pressed last wins while it is down. Nothing is remembered past its release, so there is no buffer.
+        PawnMove? HeldMove()
         {
             for (var i = 0; i < _moves.Length; i++)
                 if (_moves[i].WasPressedThisFrame())
-                    _buffered = (PawnMove)i;
+                    _lastPressed = (PawnMove)i;
+
+            if (_lastPressed != null)
+            {
+                var last = _moves[(int)_lastPressed.Value];
+                if (last.IsPressed() || last.WasPressedThisFrame()) return _lastPressed;
+            }
+
+            _lastPressed = null;
+            for (var i = 0; i < _moves.Length; i++)
+                if (_moves[i].IsPressed())
+                    return _lastPressed = (PawnMove)i;
+
+            return null;
         }
 
-        void TryStartHop()
+        void TryStartHop(PawnMove move)
         {
-            var move = _buffered;
-            _buffered = null;
-            if (move == null || !_movement.TryMove(move.Value)) return;
+            var from = _movement.Position;
+            if (!_actions.TryMove(move)) return;
 
-            _hopFrom = transform.position;
+            _hopFrom = _board.CellToWorld(from);
             _hopTo = _board.CellToWorld(_movement.Position);
             _hop.Start(_board.Tuning.moveDuration);
             RefreshAttackMarks();
@@ -84,7 +97,7 @@ namespace ChessBoss.Game
 
         void Attack(PawnAttackSide side)
         {
-            var result = _combat.TryAttack(side);
+            var result = _actions.TryAttack(side);
             if (result == PawnAttackResult.OnCooldown) return;
 
             LastAttack = result;

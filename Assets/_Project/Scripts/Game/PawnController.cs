@@ -24,6 +24,7 @@ namespace ChessBoss.Game
 
         public PawnMovement Movement => _movement;
         public PawnCombat Combat => _combat;
+        public PlayerVitals Vitals { get; private set; }
         public PawnAttackResult? LastAttack { get; private set; }
 
         void Awake()
@@ -31,6 +32,7 @@ namespace ChessBoss.Game
             var tuning = _board.Tuning;
             var start = new Cell(tuning.startCell.x, tuning.startCell.y);
             _movement = new PawnMovement(_board.Board, start);
+            Vitals = new PlayerVitals(tuning.playerHealth, tuning.invulnerableTime, tuning.burnDuration, tuning.burnTickTime, tuning.burnTickDamage);
             transform.position = _board.CellToWorld(start);
             _board.Paint(_body, tuning.pawnColor);
 
@@ -52,11 +54,12 @@ namespace ChessBoss.Game
         void Update()
         {
             _actions.Tick(Time.deltaTime);
-            if (_attackLeft.WasPressedThisFrame()) Attack(PawnAttackSide.Left);
-            if (_attackRight.WasPressedThisFrame()) Attack(PawnAttackSide.Right);
-            _boss.SetHittable(_combat.CanHitBoss);
+            var alive = !Vitals.Health.IsDead;
+            if (alive && _attackLeft.WasPressedThisFrame()) Attack(PawnAttackSide.Left);
+            if (alive && _attackRight.WasPressedThisFrame()) Attack(PawnAttackSide.Right);
+            _boss.SetHittable(alive && _combat.CanHitBoss);
 
-            var move = HeldMove();
+            var move = alive ? HeldMove() : null;
             if (move != null) TryStartHop(move.Value);
 
             if (_hop.Running)

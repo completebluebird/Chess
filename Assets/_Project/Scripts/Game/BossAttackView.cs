@@ -15,7 +15,7 @@ namespace ChessBoss.Game
         void Start()
         {
             var tuning = _board.Tuning;
-            Attacks = new BossAttacks(_pawn.Movement, _boss.Health, new System.Random(), new BossAttackSettings
+            Attacks = new BossAttacks(_pawn.Movement, _boss.Health, _pawn.Vitals, new System.Random(), new BossAttackSettings
             {
                 Interval = tuning.attackInterval,
                 LaserWarning = tuning.laserWarning,
@@ -35,6 +35,10 @@ namespace ChessBoss.Game
                 BreathBeamWidth = tuning.breathBeamWidth,
                 BreathWalls = tuning.breathWalls,
                 BreathCoverHops = tuning.breathCoverHops,
+                LaserDamage = tuning.laserDamage,
+                MeteorDamage = tuning.meteorDamage,
+                BiteDamage = tuning.biteDamage,
+                BreathDamage = tuning.breathDamage,
             });
         }
 

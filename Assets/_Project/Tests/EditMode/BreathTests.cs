@@ -169,7 +169,7 @@ namespace ChessBoss.Tests
             board = new Board(24, Rings);
             pawn = new PawnMovement(board, new Cell(18, 4));
             boss = new Health(100);
-            var attacks = new BossAttacks(pawn, boss, new Random(seed), Settings);
+            var attacks = new BossAttacks(pawn, boss, PlayerVitalsTests.Vitals(), new Random(seed), Settings);
             while (!attacks.Timeline.IsRunning || attacks.CurrentAttack != BossAttackKind.Breath)
                 attacks.Tick(0.05f);
             return attacks;
@@ -179,7 +179,7 @@ namespace ChessBoss.Tests
         public void Breath_IsEveryFourthAttack_AndTheOthersAreNot()
         {
             var board = new Board(24, Rings);
-            var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), new Health(100), new Random(1), Settings);
+            var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), new Health(100), PlayerVitalsTests.Vitals(), new Random(1), Settings);
 
             var kinds = new List<BossAttackKind>();
             var wasRunning = false;
@@ -254,6 +254,44 @@ namespace ChessBoss.Tests
 
                 Assert.AreEqual(before, attacks.PlayerHits, $"seed {seed}");
             }
+        }
+
+        [Test]
+        public void BreathHeadOn_DealsOneHitAndOneBurn_ThoughTheBeamStrikesTwice()
+        {
+            const int BreathDamage = 10;
+            const int FullBurn = 6;
+            var settings = new BossAttackSettings
+            {
+                Interval = Settings.Interval,
+                BreathEvery = 1,
+                BreathPrep = Settings.BreathPrep,
+                BreathStepTime = Settings.BreathStepTime,
+                BreathWarning = Settings.BreathWarning,
+                BreathBeamWidth = Settings.BreathBeamWidth,
+                BreathWalls = Settings.BreathWalls,
+                BreathCoverHops = Settings.BreathCoverHops,
+                BreathDamage = BreathDamage,
+            };
+
+            var multiHit = 0;
+            for (var seed = 0; seed < 100; seed++)
+            {
+                var board = new Board(24, Rings);
+                var pawn = new PawnMovement(board, new Cell(18, 4));
+                var vitals = PlayerVitalsTests.Vitals(100);
+                var attacks = new BossAttacks(pawn, new Health(100), vitals, new Random(seed), settings);
+
+                attacks.Tick(settings.Interval);
+                var open = !board.Walls.Any(wall => wall.X == pawn.Position.X && wall.Y < pawn.Position.Y);
+                while (attacks.Timeline.IsRunning) attacks.Tick(0.02f);
+                vitals.Tick(10);
+
+                Assert.AreEqual(open ? 100 - BreathDamage - FullBurn : 100, vitals.Health.Current, $"seed {seed}");
+                if (attacks.PlayerHits > 1) multiHit++;
+            }
+
+            Assert.Greater(multiHit, 0);
         }
 
         static List<Cell> PathBehindWall(Board board, Cell start)

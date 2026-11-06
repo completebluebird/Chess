@@ -54,6 +54,10 @@ namespace ChessBoss.Game
         public int breathBeamWidth;
         public int breathWalls;
         public int breathCoverHops;
+        public int laserDamage;
+        public int meteorDamage;
+        public int biteDamage;
+        public int breathDamage;
         public float wallHeight;
         public Color wallColor;
 
@@ -66,5 +70,10 @@ namespace ChessBoss.Game
         public Color pawnColor;
         public int attackDamage;
         public float attackCooldown;
+        public int playerHealth;
+        public float invulnerableTime;
+        public float burnDuration;
+        public float burnTickTime;
+        public int burnTickDamage;
     }
 }

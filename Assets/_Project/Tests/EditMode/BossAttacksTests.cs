@@ -10,14 +10,14 @@ namespace ChessBoss.Tests
     {
         const float Warning = 1f;
 
-        readonly Board _board = new Board(24, 6);
+        readonly Board _board = new Board(24, 8);
 
         [Test]
         public void Laser_CoversEveryWalkableRingOfItsSectors()
         {
             var step = BossPatterns.Laser(_board, new[] { 5 }, Warning);
 
-            CollectionAssert.AreEquivalent(Enumerable.Range(1, 5).Select(ring => new Cell(5, ring)), step.Cells);
+            CollectionAssert.AreEquivalent(Enumerable.Range(1, 7).Select(ring => new Cell(5, ring)), step.Cells);
             Assert.AreEqual(Warning, step.StrikeTime - step.WarningStart, 1e-5f);
         }
 
@@ -63,8 +63,8 @@ namespace ChessBoss.Tests
 
     public class BossAttacksTests
     {
-        // A pawn hop takes this long, so the warning time buys warning / HopTime moves.
-        const float HopTime = 0.15f;
+        // Moves are this far apart, so the warning time buys warning / MoveCooldown moves.
+        const float MoveCooldown = 0.2f;
 
         static readonly BossAttackSettings Settings = new BossAttackSettings
         {
@@ -88,7 +88,7 @@ namespace ChessBoss.Tests
             BreathCoverHops = 5,
         };
 
-        readonly Board _board = new Board(24, 6);
+        readonly Board _board = new Board(24, 8);
 
         BossAttacks Attacks(int seed, Cell start, out PawnMovement pawn, out Health boss)
         {
@@ -218,7 +218,7 @@ namespace ChessBoss.Tests
                     hopReady -= 0.05f;
                     if (hopReady > 0 || !attacks.Timeline.WarningCells.Contains(pawn.Position)) return;
                     Assert.IsTrue(pawn.TryMove(PawnMove.Right));
-                    hopReady = HopTime;
+                    hopReady = MoveCooldown;
                 });
 
                 Assert.AreEqual(0, attacks.PlayerHits, $"seed {seed} {attacks.CurrentAttack}");
@@ -274,7 +274,7 @@ namespace ChessBoss.Tests
         [Test]
         public void Aim_FollowsTheBreathBeamOneSectorPerStep()
         {
-            var board = new Board(24, 6);
+            var board = new Board(24, 8);
             var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), new Health(100), new Random(1), Settings);
             while (!attacks.Timeline.IsRunning || attacks.CurrentAttack != BossAttackKind.Breath)
                 attacks.Tick(0.05f);
@@ -349,7 +349,7 @@ namespace ChessBoss.Tests
                 var warned = new HashSet<Cell>(attacks.Timeline.WarningCells);
                 var warning = WarningTimeOf(attacks.CurrentAttack);
 
-                Assert.LessOrEqual(HopsToSafety(start, warned) * HopTime, warning, $"{start} seed {seed} {attacks.CurrentAttack}");
+                Assert.LessOrEqual(HopsToSafety(start, warned) * MoveCooldown, warning, $"{start} seed {seed} {attacks.CurrentAttack}");
             }
         }
 

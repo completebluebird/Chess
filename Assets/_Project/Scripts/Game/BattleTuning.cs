@@ -60,6 +60,7 @@ namespace ChessBoss.Game
         [Header("Pawn")]
         public Vector2Int startCell;
         public float moveDuration;
+        public float moveCooldown;
         public float jumpHeight;
         public float squash;
         public Color pawnColor;

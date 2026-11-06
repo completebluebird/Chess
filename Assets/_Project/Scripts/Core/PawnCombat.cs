@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 namespace ChessBoss.Core
@@ -21,15 +20,12 @@ namespace ChessBoss.Core
         readonly PawnMovement _movement;
         readonly Health _boss;
         readonly int _damage;
-        readonly float _cooldown;
-        float _cooldownRemaining;
 
-        public PawnCombat(PawnMovement movement, Health boss, int damage, float cooldown)
+        public PawnCombat(PawnMovement movement, Health boss, int damage)
         {
             _movement = movement;
             _boss = boss;
             _damage = damage;
-            _cooldown = cooldown;
         }
 
         public IEnumerable<Cell> AttackableCells
@@ -52,13 +48,8 @@ namespace ChessBoss.Core
         public Cell AttackCell(PawnAttackSide side) =>
             _movement.Board.Step(_movement.Position, side == PawnAttackSide.Left ? -1 : 1, -1);
 
-        public void Tick(float deltaTime) => _cooldownRemaining = Math.Max(0, _cooldownRemaining - deltaTime);
-
-        public PawnAttackResult TryAttack(PawnAttackSide side)
+        public PawnAttackResult Attack(PawnAttackSide side)
         {
-            if (_cooldownRemaining > 0) return PawnAttackResult.OnCooldown;
-
-            _cooldownRemaining = _cooldown;
             if (_boss.IsDead || !_movement.Board.IsBossCell(AttackCell(side))) return PawnAttackResult.Miss;
 
             _boss.TakeDamage(_damage);

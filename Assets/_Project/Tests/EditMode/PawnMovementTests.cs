@@ -6,8 +6,9 @@ namespace ChessBoss.Tests
     public class PawnMovementTests
     {
         const int Sectors = 24;
+        const int Rings = 8;
 
-        static PawnMovement Pawn(int x, int y) => new PawnMovement(new Board(Sectors, 6), new Cell(x, y));
+        static PawnMovement Pawn(int x, int y) => new PawnMovement(new Board(Sectors, Rings), new Cell(x, y));
 
         [Test]
         public void ForwardAndBack_ChangeRing_FromEverySector()
@@ -46,10 +47,10 @@ namespace ChessBoss.Tests
         [Test]
         public void Back_OffBoard_IsBlocked()
         {
-            var pawn = Pawn(18, 5);
+            var pawn = Pawn(18, Rings - 1);
 
             Assert.IsFalse(pawn.TryMove(PawnMove.Back));
-            Assert.AreEqual(new Cell(18, 5), pawn.Position);
+            Assert.AreEqual(new Cell(18, Rings - 1), pawn.Position);
         }
 
         [Test]
@@ -62,7 +63,7 @@ namespace ChessBoss.Tests
         [TestCase(PawnMove.Right)]
         public void Sidestep_CirclesBossOnce_StayingOnItsRing(PawnMove move)
         {
-            for (var y = 1; y < 6; y++)
+            for (var y = 1; y < Rings; y++)
             {
                 var pawn = Pawn(18, y);
 

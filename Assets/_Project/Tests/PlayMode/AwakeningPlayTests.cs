@@ -44,6 +44,7 @@ namespace ChessBoss.Tests
             InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
             BattleTime.Stopped = false;
             BattleTime.SlowMotion = 1;
+            BattleTime.StunSlowMotion = 1;
             InputSystem.settings.backgroundBehavior = _backgroundBehavior;
             InputSystem.settings.editorInputBehaviorInPlayMode = _editorBehavior;
         }
@@ -175,6 +176,34 @@ namespace ChessBoss.Tests
             yield return new WaitForSecondsRealtime(_tuning.hitstopDuration + _tuning.awakenTravelTime / _tuning.awakenTimeScale + 0.1f);
             Assert.AreEqual(1f, Time.timeScale);
             Assert.That(Vector3.Distance(_board.CellToWorld(landing), _pawn.transform.position), Is.LessThan(0.01f));
+        }
+
+        [UnityTest]
+        public IEnumerator BreathThenStun_SlowsOnlyTheEntry_AndHoldsTheGauge()
+        {
+            var attacks = Object.FindAnyObjectByType<BossAttackView>().Attacks;
+            _boss.Health.TakeDamage(_tuning.bossHealth - (int)(_tuning.bossHealth * _tuning.stunHealthFractions[0]));
+            yield return null;
+            yield return null;
+            Assert.AreEqual(BossPhase.Breathing, attacks.Phase);
+
+            var limit = Time.realtimeSinceStartup + 15;
+            yield return new WaitUntil(() => attacks.Phase == BossPhase.Stunned || Time.realtimeSinceStartup > limit);
+            Assert.AreEqual(BossPhase.Stunned, attacks.Phase);
+            yield return null;
+            Assert.AreEqual(_tuning.stunSlowTimeScale, Time.timeScale, 1e-4f);
+            var gauge = _pawn.Awakening.Gauge;
+
+            yield return new WaitForSecondsRealtime(_tuning.stunSlowTime + 0.1f);
+            Assert.AreEqual(1f, Time.timeScale);
+            Assert.AreEqual(BossPhase.Stunned, attacks.Phase);
+            Assert.AreEqual(gauge, _pawn.Awakening.Gauge, 1e-4f);
+
+            limit = Time.realtimeSinceStartup + _tuning.stunDuration + 2;
+            yield return new WaitUntil(() => attacks.Phase != BossPhase.Stunned || Time.realtimeSinceStartup > limit);
+            Assert.AreEqual(BossPhase.Pressing, attacks.Phase);
+            yield return new WaitForSeconds(0.2f);
+            Assert.Greater(_pawn.Awakening.Gauge, gauge);
         }
 
         [UnityTest]

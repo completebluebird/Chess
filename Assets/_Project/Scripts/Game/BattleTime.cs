@@ -6,6 +6,7 @@ namespace ChessBoss.Game
     public static class BattleTime
     {
         static float _slowMotion = 1;
+        static float _stunSlowMotion = 1;
         static bool _stopped;
 
         public static float SlowMotion
@@ -13,6 +14,15 @@ namespace ChessBoss.Game
             set
             {
                 _slowMotion = value;
+                Apply();
+            }
+        }
+
+        public static float StunSlowMotion
+        {
+            set
+            {
+                _stunSlowMotion = value;
                 Apply();
             }
         }
@@ -26,6 +36,6 @@ namespace ChessBoss.Game
             }
         }
 
-        static void Apply() => Time.timeScale = _stopped ? 0 : _slowMotion;
+        static void Apply() => Time.timeScale = _stopped ? 0 : Mathf.Min(_slowMotion, _stunSlowMotion);
     }
 }

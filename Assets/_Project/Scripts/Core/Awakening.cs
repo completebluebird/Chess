@@ -21,6 +21,9 @@ namespace ChessBoss.Core
         public float Gauge => Math.Min(1, _charged / _chargeTime);
         public float WindowLeft => _windowLeft;
 
+        /// <summary>While the boss is stunned the gauge holds. A piece already waiting is unaffected.</summary>
+        public bool ChargePaused { get; set; }
+
         public event Action Ended;
 
         public Awakening(float chargeTime, float inputWindow)
@@ -37,7 +40,7 @@ namespace ChessBoss.Core
         {
             if (Active == null)
             {
-                _charged = Math.Min(_chargeTime, _charged + gameDeltaTime);
+                if (!ChargePaused) _charged = Math.Min(_chargeTime, _charged + gameDeltaTime);
                 return;
             }
 

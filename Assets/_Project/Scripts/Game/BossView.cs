@@ -12,7 +12,10 @@ namespace ChessBoss.Game
         float _flashRemaining;
         float _hitstopRemaining;
         bool _hittable;
+        bool _stunned;
         Transform _head;
+
+        Color RestColor => _stunned ? _board.Tuning.bossStunColor : _board.Tuning.bossColor;
 
         public Health Health => _health ??= new Health(_board.Tuning.bossHealth);
 
@@ -49,7 +52,13 @@ namespace ChessBoss.Game
             if (_hittable == hittable) return;
 
             _hittable = hittable;
-            if (!hittable && _flashRemaining <= 0) _board.Paint(_body, _board.Tuning.bossColor);
+            if (!hittable && _flashRemaining <= 0) _board.Paint(_body, RestColor);
+        }
+
+        public void SetStunned(bool stunned)
+        {
+            _stunned = stunned;
+            if (_flashRemaining <= 0) _board.Paint(_body, RestColor);
         }
 
         public void PlayHit()
@@ -72,13 +81,13 @@ namespace ChessBoss.Game
             if (_flashRemaining > 0)
             {
                 _flashRemaining -= Time.unscaledDeltaTime;
-                if (_flashRemaining <= 0) _board.Paint(_body, _board.Tuning.bossColor);
+                if (_flashRemaining <= 0) _board.Paint(_body, RestColor);
             }
             else if (_hittable)
             {
                 var tuning = _board.Tuning;
                 var blink = Mathf.PingPong(Time.unscaledTime * 2 / tuning.bossBlinkPeriod, 1);
-                _board.Paint(_body, Color.Lerp(tuning.bossColor, tuning.attackableColor, blink));
+                _board.Paint(_body, Color.Lerp(RestColor, tuning.attackableColor, blink));
             }
         }
 

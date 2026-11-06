@@ -50,7 +50,13 @@ MonoBehaviour:
   biteWarning: 0.6
   biteDepth: 2
   biteHalfWidth: 2
-  breathEvery: 4
+  stunHealthFractions:
+  - 0.7
+  - 0.4
+  stunDuration: 5
+  stunSlowTimeScale: 0.5
+  stunSlowTime: 0.5
+  bossStunColor: {r: 0.45, g: 0.45, b: 0.6, a: 1}
   breathPrep: 2
   breathStepTime: 0.1
   breathWarning: 0.6

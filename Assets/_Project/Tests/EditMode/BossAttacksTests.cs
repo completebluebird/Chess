@@ -86,15 +86,23 @@ namespace ChessBoss.Tests
             BreathBeamWidth = 2,
             BreathWalls = 2,
             BreathCoverHops = 5,
+            LaserDamage = 10,
+            MeteorDamage = 20,
+            BiteDamage = 30,
+            BreathDamage = 10,
         };
 
         readonly Board _board = new Board(24, 8);
+        PlayerVitals _vitals;
+        Health _boss;
 
         BossAttacks Attacks(int seed, Cell start, out PawnMovement pawn, out Health boss)
         {
             pawn = new PawnMovement(_board, start);
             boss = new Health(100);
-            return new BossAttacks(pawn, boss, new Random(seed), Settings);
+            _boss = boss;
+            _vitals = PlayerVitalsTests.Vitals();
+            return new BossAttacks(pawn, boss, _vitals, new Random(seed), Settings);
         }
 
         BossAttacks Attacks(int seed, out PawnMovement pawn, out Health boss) =>
@@ -275,7 +283,7 @@ namespace ChessBoss.Tests
         public void Aim_FollowsTheBreathBeamOneSectorPerStep()
         {
             var board = new Board(24, 8);
-            var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), new Health(100), new Random(1), Settings);
+            var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), new Health(100), PlayerVitalsTests.Vitals(), new Random(1), Settings);
             while (!attacks.Timeline.IsRunning || attacks.CurrentAttack != BossAttackKind.Breath)
                 attacks.Tick(0.05f);
             attacks.Tick(Settings.BreathPrep - 0.01f);
@@ -436,6 +444,62 @@ namespace ChessBoss.Tests
             Assert.AreEqual(0, attacks.PlayerHits);
             CollectionAssert.IsEmpty(attacks.Timeline.WarningCells);
             Assert.IsFalse(attacks.Timeline.IsRunning);
+        }
+
+        [TestCase(BossAttackKind.Laser, 10, true)]
+        [TestCase(BossAttackKind.Meteor, 20, true)]
+        [TestCase(BossAttackKind.Bite, 30, false)]
+        public void Strike_DealsItsDamage_AndOnlyFireBurns(BossAttackKind kind, int damage, bool burns)
+        {
+            var attacks = AttacksStartingWith(kind, out _);
+            var before = _vitals.Health.Current;
+
+            while (attacks.PlayerHits == 0) attacks.Tick(0.01f);
+
+            Assert.AreEqual(before - damage, _vitals.Health.Current);
+            Assert.AreEqual(burns, _vitals.IsBurning);
+        }
+
+        [Test]
+        public void Dodged_LeavesHealthUntouched()
+        {
+            var attacks = AttacksStartingWith(BossAttackKind.Bite, out var pawn);
+            var before = _vitals.Health.Current;
+
+            Assert.IsTrue(pawn.TryMove(PawnMove.Back));
+            Assert.IsTrue(pawn.TryMove(PawnMove.Back));
+            attacks.Tick(Settings.BiteWarning);
+
+            Assert.AreEqual(before, _vitals.Health.Current);
+        }
+
+        [Test]
+        public void DeadPlayer_CancelsAttackAndStopsAttacking()
+        {
+            var attacks = Attacks(1, out _, out _);
+            attacks.Tick(Settings.Interval);
+            _vitals.Health.TakeDamage(_vitals.Health.Max);
+            var hits = attacks.PlayerHits;
+
+            attacks.Tick(Settings.MeteorWarning);
+            attacks.Tick(Settings.Interval * 3);
+
+            Assert.AreEqual(hits, attacks.PlayerHits);
+            CollectionAssert.IsEmpty(attacks.Timeline.WarningCells);
+            Assert.IsFalse(attacks.Timeline.IsRunning);
+        }
+
+        [Test]
+        public void DeadBoss_StopsTheBurn_SoAWonFightCantBeLost()
+        {
+            var attacks = AttacksStartingWith(BossAttackKind.Laser, out _);
+            while (attacks.PlayerHits == 0) attacks.Tick(0.01f);
+            var health = _vitals.Health.Current;
+
+            _boss.TakeDamage(_boss.Max);
+            attacks.Tick(10);
+
+            Assert.AreEqual(health, _vitals.Health.Current);
         }
     }
 }

@@ -57,6 +57,10 @@ MonoBehaviour:
   breathBeamWidth: 2
   breathWalls: 2
   breathCoverHops: 5
+  laserDamage: 10
+  meteorDamage: 20
+  biteDamage: 30
+  breathDamage: 10
   wallHeight: 1.5
   wallColor: {r: 0.35, g: 0.38, b: 0.45, a: 1}
   startCell: {x: 18, y: 4}
@@ -67,3 +71,8 @@ MonoBehaviour:
   pawnColor: {r: 0.45, g: 0.65, b: 1, a: 1}
   attackDamage: 2
   attackCooldown: 0.4
+  playerHealth: 50
+  invulnerableTime: 0.4
+  burnDuration: 3
+  burnTickTime: 0.5
+  burnTickDamage: 1

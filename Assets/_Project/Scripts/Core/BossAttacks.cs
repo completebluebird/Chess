@@ -33,7 +33,8 @@ namespace ChessBoss.Core
             for (var i = 0; i < steps.Length; i++)
             {
                 var head = i;
-                var beam = Enumerable.Range(0, settings.BreathBeamWidth)
+                // The beam grows from its start, or it would strike the sector behind the start now and again at the end of the turn.
+                var beam = Enumerable.Range(0, Math.Min(settings.BreathBeamWidth, head + 1))
                     .Select(behind => board.Step(start, direction * (head - behind), 0).X)
                     .ToArray();
                 var cells = board.Cells
@@ -124,13 +125,18 @@ namespace ChessBoss.Core
         public int BreathBeamWidth;
         public int BreathWalls;
         public int BreathCoverHops;
+        public int LaserDamage;
+        public int MeteorDamage;
+        public int BiteDamage;
+        public int BreathDamage;
     }
 
-    /// <summary>Starts boss attacks at intervals and counts the strikes that land on the player.</summary>
+    /// <summary>Starts boss attacks at intervals and applies the strikes that land on the player.</summary>
     public sealed class BossAttacks
     {
         readonly PawnMovement _pawn;
         readonly Health _boss;
+        readonly PlayerVitals _vitals;
         readonly Random _random;
         readonly BossAttackSettings _settings;
         float _idle;
@@ -142,26 +148,35 @@ namespace ChessBoss.Core
 
         public AttackTimeline Timeline { get; } = new AttackTimeline();
         public BossAttackKind CurrentAttack { get; private set; }
+
+        /// <summary>Strikes that reached the player's cell, including those invulnerability then blocked.</summary>
         public int PlayerHits { get; private set; }
 
         /// <summary>The attack's target while one runs, otherwise the pawn.</summary>
         public int AimSector => Timeline.AimSector ?? _pawn.Position.X;
 
-        public BossAttacks(PawnMovement pawn, Health boss, Random random, BossAttackSettings settings)
+        public BossAttacks(PawnMovement pawn, Health boss, PlayerVitals vitals, Random random, BossAttackSettings settings)
         {
             _pawn = pawn;
             _boss = boss;
+            _vitals = vitals;
             _random = random;
             _settings = settings;
             Timeline.Struck += cells =>
             {
-                if (cells.Contains(_pawn.Position)) PlayerHits++;
+                if (!cells.Contains(_pawn.Position)) return;
+
+                PlayerHits++;
+                _vitals.Hit(DamageOf(CurrentAttack), CurrentAttack != BossAttackKind.Bite);
             };
         }
 
         public void Tick(float deltaTime)
         {
-            if (_boss.IsDead)
+            // A dead boss ends the burn too, so the fight can't be lost after it is won.
+            if (!_boss.IsDead) _vitals.Tick(deltaTime);
+
+            if (_boss.IsDead || _vitals.Health.IsDead)
             {
                 Timeline.Stop();
                 _laserShotsLeft = 0;
@@ -185,6 +200,17 @@ namespace ChessBoss.Core
 
             _idle = 0;
             StartNextAttack();
+        }
+
+        int DamageOf(BossAttackKind kind)
+        {
+            switch (kind)
+            {
+                case BossAttackKind.Laser: return _settings.LaserDamage;
+                case BossAttackKind.Meteor: return _settings.MeteorDamage;
+                case BossAttackKind.Bite: return _settings.BiteDamage;
+                default: return _settings.BreathDamage;
+            }
         }
 
         void StartNextAttack()

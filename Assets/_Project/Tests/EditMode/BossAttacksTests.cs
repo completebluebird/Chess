@@ -79,7 +79,8 @@ namespace ChessBoss.Tests
             BiteWarning = 0.6f,
             BiteDepth = 2,
             BiteHalfWidth = 2,
-            BreathEvery = 4,
+            BreathAtHealth = new[] { 0.7f, 0.4f },
+            StunDuration = 5f,
             BreathPrep = 2f,
             BreathStepTime = 0.1f,
             BreathWarning = 0.6f,
@@ -283,9 +284,11 @@ namespace ChessBoss.Tests
         public void Aim_FollowsTheBreathBeamOneSectorPerStep()
         {
             var board = new Board(24, 8);
-            var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), new Health(100), PlayerVitalsTests.Vitals(), new Random(1), Settings);
-            while (!attacks.Timeline.IsRunning || attacks.CurrentAttack != BossAttackKind.Breath)
-                attacks.Tick(0.05f);
+            var boss = new Health(100);
+            var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), boss, PlayerVitalsTests.Vitals(), new Random(1), Settings);
+            boss.TakeDamage(30);
+            attacks.Tick(0.05f);
+            Assert.AreEqual(BossAttackKind.Breath, attacks.CurrentAttack);
             attacks.Tick(Settings.BreathPrep - 0.01f);
             var first = attacks.AimSector;
 

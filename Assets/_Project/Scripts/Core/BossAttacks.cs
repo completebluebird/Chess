@@ -105,6 +105,13 @@ namespace ChessBoss.Core
         Breath,
     }
 
+    public enum BossPhase
+    {
+        Pressing,
+        Breathing,
+        Stunned,
+    }
+
     public sealed class BossAttackSettings
     {
         public float Interval;
@@ -118,7 +125,8 @@ namespace ChessBoss.Core
         public float BiteWarning;
         public int BiteDepth;
         public int BiteHalfWidth;
-        public int BreathEvery;
+        public float[] BreathAtHealth;
+        public float StunDuration;
         public float BreathPrep;
         public float BreathStepTime;
         public float BreathWarning;
@@ -140,7 +148,9 @@ namespace ChessBoss.Core
         readonly Random _random;
         readonly BossAttackSettings _settings;
         float _idle;
-        int _attacksStarted;
+        readonly float[] _breathAtHealth;
+        int _nextBreath;
+        float _stunLeft;
         int _laserShotsLeft;
         float _nextLaserShot;
         BossAttackKind _lastBasicAttack;
@@ -148,6 +158,7 @@ namespace ChessBoss.Core
 
         public AttackTimeline Timeline { get; } = new AttackTimeline();
         public BossAttackKind CurrentAttack { get; private set; }
+        public BossPhase Phase { get; private set; }
 
         /// <summary>Strikes that reached the player's cell, including those invulnerability then blocked.</summary>
         public int PlayerHits { get; private set; }
@@ -162,6 +173,7 @@ namespace ChessBoss.Core
             _vitals = vitals;
             _random = random;
             _settings = settings;
+            _breathAtHealth = settings.BreathAtHealth.OrderByDescending(fraction => fraction).ToArray();
             Timeline.Struck += cells =>
             {
                 if (!cells.Contains(_pawn.Position)) return;
@@ -180,6 +192,7 @@ namespace ChessBoss.Core
             {
                 Timeline.Stop();
                 _laserShotsLeft = 0;
+                Phase = BossPhase.Pressing;
                 _pawn.Board.SetWalls(new Cell[0]);
                 return;
             }
@@ -195,6 +208,28 @@ namespace ChessBoss.Core
             if (Timeline.IsRunning) return;
 
             _pawn.Board.SetWalls(new Cell[0]);
+            if (Phase == BossPhase.Breathing)
+            {
+                Phase = BossPhase.Stunned;
+                _stunLeft = _settings.StunDuration;
+                return;
+            }
+
+            if (Phase == BossPhase.Stunned)
+            {
+                _stunLeft -= deltaTime;
+                if (_stunLeft > 0) return;
+
+                Phase = BossPhase.Pressing;
+                _idle = 0;
+            }
+
+            if (PassedABreathThreshold())
+            {
+                StartBreath();
+                return;
+            }
+
             _idle += deltaTime;
             if (_idle < _settings.Interval) return;
 
@@ -213,19 +248,31 @@ namespace ChessBoss.Core
             }
         }
 
-        void StartNextAttack()
+        // Uses up every threshold passed so far, so a big hit across two of them means one breath, not two in a row.
+        bool PassedABreathThreshold()
         {
-            _attacksStarted++;
-            // shortcut: breath comes on a fixed count, M6 replaces this with the boss health thresholds.
-            if (_attacksStarted % _settings.BreathEvery == 0)
+            var passed = false;
+            // Rounded, because 0.7f * 100 comes out just under 70 on Unity's runtime and the exact health would miss it.
+            while (_nextBreath < _breathAtHealth.Length && _boss.Current <= Math.Round(_breathAtHealth[_nextBreath] * _boss.Max))
             {
-                CurrentAttack = BossAttackKind.Breath;
-                var breath = BossPatterns.Breath(_pawn.Board, _pawn.Position, _random, _settings);
-                _pawn.Board.SetWalls(breath.Walls);
-                Timeline.Start(breath.Steps);
-                return;
+                passed = true;
+                _nextBreath++;
             }
 
+            return passed;
+        }
+
+        void StartBreath()
+        {
+            Phase = BossPhase.Breathing;
+            CurrentAttack = BossAttackKind.Breath;
+            var breath = BossPatterns.Breath(_pawn.Board, _pawn.Position, _random, _settings);
+            _pawn.Board.SetWalls(breath.Walls);
+            Timeline.Start(breath.Steps);
+        }
+
+        void StartNextAttack()
+        {
             CurrentAttack = PickBasicAttack();
             var board = _pawn.Board;
             var position = _pawn.Position;
@@ -252,7 +299,7 @@ namespace ChessBoss.Core
             }
         }
 
-        // Near the boss, bite is favored; no attack runs three times in a row, and breath is decided separately.
+        // Near the boss, bite is favored; no attack runs three times in a row, and breath comes from the health thresholds.
         BossAttackKind PickBasicAttack()
         {
             var options = new List<BossAttackKind> { BossAttackKind.Laser, BossAttackKind.Meteor };

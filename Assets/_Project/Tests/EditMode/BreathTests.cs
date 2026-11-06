@@ -25,7 +25,8 @@ namespace ChessBoss.Tests
             BiteWarning = 0.6f,
             BiteDepth = 2,
             BiteHalfWidth = 2,
-            BreathEvery = 4,
+            BreathAtHealth = new[] { 0.7f, 0.4f },
+            StunDuration = 5f,
             BreathPrep = 2f,
             BreathStepTime = 0.1f,
             BreathWarning = 0.6f,
@@ -170,28 +171,10 @@ namespace ChessBoss.Tests
             pawn = new PawnMovement(board, new Cell(18, 4));
             boss = new Health(100);
             var attacks = new BossAttacks(pawn, boss, PlayerVitalsTests.Vitals(), new Random(seed), Settings);
-            while (!attacks.Timeline.IsRunning || attacks.CurrentAttack != BossAttackKind.Breath)
-                attacks.Tick(0.05f);
+            boss.TakeDamage(30);
+            attacks.Tick(0.05f);
+            Assert.AreEqual(BossAttackKind.Breath, attacks.CurrentAttack);
             return attacks;
-        }
-
-        [Test]
-        public void Breath_IsEveryFourthAttack_AndTheOthersAreNot()
-        {
-            var board = new Board(24, Rings);
-            var attacks = new BossAttacks(new PawnMovement(board, new Cell(18, 4)), new Health(100), PlayerVitalsTests.Vitals(), new Random(1), Settings);
-
-            var kinds = new List<BossAttackKind>();
-            var wasRunning = false;
-            while (kinds.Count < 8)
-            {
-                attacks.Tick(0.05f);
-                if (attacks.Timeline.IsRunning && !wasRunning) kinds.Add(attacks.CurrentAttack);
-                wasRunning = attacks.Timeline.IsRunning;
-            }
-
-            CollectionAssert.AreEqual(new[] { 3, 7 },
-                kinds.Select((kind, i) => (kind, i)).Where(k => k.kind == BossAttackKind.Breath).Select(k => k.i));
         }
 
         [Test]
@@ -264,7 +247,8 @@ namespace ChessBoss.Tests
             var settings = new BossAttackSettings
             {
                 Interval = Settings.Interval,
-                BreathEvery = 1,
+                BreathAtHealth = new[] { 0.7f },
+                StunDuration = 5f,
                 BreathPrep = Settings.BreathPrep,
                 BreathStepTime = Settings.BreathStepTime,
                 BreathWarning = Settings.BreathWarning,
@@ -280,9 +264,11 @@ namespace ChessBoss.Tests
                 var board = new Board(24, Rings);
                 var pawn = new PawnMovement(board, new Cell(18, 4));
                 var vitals = PlayerVitalsTests.Vitals(100);
-                var attacks = new BossAttacks(pawn, new Health(100), vitals, new Random(seed), settings);
+                var boss = new Health(100);
+                var attacks = new BossAttacks(pawn, boss, vitals, new Random(seed), settings);
 
-                attacks.Tick(settings.Interval);
+                boss.TakeDamage(30);
+                attacks.Tick(0.01f);
                 var open = !board.Walls.Any(wall => wall.X == pawn.Position.X && wall.Y < pawn.Position.Y);
                 while (attacks.Timeline.IsRunning) attacks.Tick(0.02f);
                 vitals.Tick(10);

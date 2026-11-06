@@ -10,6 +10,9 @@ namespace ChessBoss.Game
         [SerializeField] PawnController _pawn;
         [SerializeField] BossView _boss;
 
+        BossPhase _shownPhase;
+        float _stunSlowLeft;
+
         public BossAttacks Attacks { get; private set; }
 
         void Start()
@@ -28,7 +31,8 @@ namespace ChessBoss.Game
                 BiteWarning = tuning.biteWarning,
                 BiteDepth = tuning.biteDepth,
                 BiteHalfWidth = tuning.biteHalfWidth,
-                BreathEvery = tuning.breathEvery,
+                BreathAtHealth = tuning.stunHealthFractions,
+                StunDuration = tuning.stunDuration,
                 BreathPrep = tuning.breathPrep,
                 BreathStepTime = tuning.breathStepTime,
                 BreathWarning = tuning.breathWarning,
@@ -47,7 +51,29 @@ namespace ChessBoss.Game
             Attacks.Tick(Time.deltaTime);
             _board.ShowWarnings(Attacks.Timeline);
             _board.ShowWalls();
-            _boss.Face(_pawn.Movement.Position.X, Attacks.AimSector);
+            ShowPhase();
+            if (Attacks.Phase != BossPhase.Stunned) _boss.Face(_pawn.Movement.Position.X, Attacks.AimSector);
         }
+
+        void ShowPhase()
+        {
+            var stunned = Attacks.Phase == BossPhase.Stunned;
+            _pawn.Awakening.ChargePaused = stunned;
+            if (_shownPhase != Attacks.Phase)
+            {
+                _shownPhase = Attacks.Phase;
+                _boss.SetStunned(stunned);
+                _stunSlowLeft = stunned ? _board.Tuning.stunSlowTime : 0;
+                BattleTime.StunSlowMotion = stunned ? _board.Tuning.stunSlowTimeScale : 1;
+            }
+            else if (_stunSlowLeft > 0)
+            {
+                // Real time, so the signal lasts as long as it says however slow the game runs.
+                _stunSlowLeft -= Time.unscaledDeltaTime;
+                if (_stunSlowLeft <= 0) BattleTime.StunSlowMotion = 1;
+            }
+        }
+
+        void OnDisable() => BattleTime.StunSlowMotion = 1;
     }
 }

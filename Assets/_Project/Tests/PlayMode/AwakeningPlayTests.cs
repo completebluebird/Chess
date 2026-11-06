@@ -43,6 +43,7 @@ namespace ChessBoss.Tests
         {
             InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
             BattleTime.Stopped = false;
+            BattleTime.Paused = false;
             BattleTime.SlowMotion = 1;
             BattleTime.StunSlowMotion = 1;
             InputSystem.settings.backgroundBehavior = _backgroundBehavior;

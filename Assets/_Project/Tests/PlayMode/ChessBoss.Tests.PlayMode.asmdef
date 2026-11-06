@@ -5,6 +5,7 @@
         "ChessBoss.Core",
         "ChessBoss.Game",
         "Unity.InputSystem",
+        "UnityEngine.UI",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

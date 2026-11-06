@@ -86,6 +86,7 @@ namespace ChessBoss.Game
         public int awakenDamagePerRing;
         public float awakenCooldownPerRing;
         public int rookRingHitDamage;
+        public float bishopInputBuffer;
         public float landingInvulnerable;
     }
 }

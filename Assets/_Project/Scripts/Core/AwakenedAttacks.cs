@@ -3,6 +3,14 @@ using System.Linq;
 
 namespace ChessBoss.Core
 {
+    public enum BishopMove
+    {
+        ForwardRight,
+        ForwardLeft,
+        BackRight,
+        BackLeft,
+    }
+
     public sealed class AwakenSettings
     {
         public int BaseDamage;
@@ -73,6 +81,37 @@ namespace ChessBoss.Core
             var way = direction == PawnMove.Left ? -1 : 1;
             var ring = Enumerable.Range(0, board.Sectors + 1).Select(i => board.Step(start, way * i, 0)).ToArray();
             return Finish(ring, 0, board.Sectors * _settings.RookRingHitDamage, 0);
+        }
+
+        /// <summary>Null when no bishop is waiting or the shared cooldown still runs, so the keys did nothing.</summary>
+        public AwakenedStrike Bishop(BishopMove move)
+        {
+            if (_awakening.Active != AwakenPiece.Bishop || !_actions.IsReady) return null;
+
+            _awakening.End();
+            var way = move == BishopMove.ForwardRight || move == BishopMove.BackRight ? 1 : -1;
+            var path = BishopLine(_pawn.Position, way, move == BishopMove.BackRight || move == BishopMove.BackLeft);
+            var moved = path.Count - 1;
+
+            // The beam ends on the boss one sector past the last cell. Turned 90 degrees right, every diagonal points
+            // one sector toward D; the ring part is dropped, because the landing stays on the ring before the boss.
+            path.Add(_pawn.Board.Step(path[moved], way + 1, 0));
+            return Finish(path, moved, _settings.BaseDamage + moved * _settings.DamagePerRing, moved);
+        }
+
+        // Keeps going the same way around the board, bouncing off the outer edge when sent backward.
+        List<Cell> BishopLine(Cell start, int way, bool backFirst)
+        {
+            var board = _pawn.Board;
+            var line = new List<Cell> { start };
+            if (backFirst)
+                while (line[line.Count - 1].Y < board.Rings - 1)
+                    line.Add(board.Step(line[line.Count - 1], way, 1));
+
+            while (line[line.Count - 1].Y > Board.BossRing + 1)
+                line.Add(board.Step(line[line.Count - 1], way, -1));
+
+            return line;
         }
 
         // Straight along the sector to the ring before the boss, going out to the board's edge first when sent backward.

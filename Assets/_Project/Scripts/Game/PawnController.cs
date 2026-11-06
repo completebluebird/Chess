@@ -16,6 +16,8 @@ namespace ChessBoss.Game
         InputAction _attackLeft;
         InputAction _attackRight;
         InputAction _awakenRook;
+        InputAction _awakenBishop;
+        BishopInput _bishopInput;
         PawnMovement _movement;
         PawnCombat _combat;
         PawnActions _actions;
@@ -50,9 +52,11 @@ namespace ChessBoss.Game
             _attackLeft = actions.FindAction("AttackLeft", true);
             _attackRight = actions.FindAction("AttackRight", true);
             _awakenRook = actions.FindAction("AwakenRook", true);
+            _awakenBishop = actions.FindAction("AwakenBishop", true);
 
             _combat = new PawnCombat(_movement, _boss.Health, tuning.attackDamage);
             _actions = new PawnActions(_movement, _combat, tuning.moveCooldown, tuning.attackCooldown);
+            _bishopInput = new BishopInput(tuning.bishopInputBuffer);
             Awakening = new Awakening(tuning.awakenChargeTime, tuning.awakenInputWindow);
             AwakenedAttacks = new AwakenedAttacks(_movement, _boss.Health, Vitals, _actions, Awakening, new AwakenSettings
             {
@@ -75,6 +79,7 @@ namespace ChessBoss.Game
             var fighting = alive && !_boss.Health.IsDead;
             if (!fighting) Awakening.End();
             else if (_awakenRook.WasPressedThisFrame()) Awakening.TryAwaken(AwakenPiece.Rook);
+            else if (_awakenBishop.WasPressedThisFrame()) Awakening.TryAwaken(AwakenPiece.Bishop);
 
             if (Awakening.Active != null) ReadAwakenedAttack();
             else if (alive) ReadPawnInput();
@@ -98,12 +103,13 @@ namespace ChessBoss.Game
         // A fresh press only, so a key still held from walking doesn't fire the one attack by accident.
         void ReadAwakenedAttack()
         {
+            _bishopInput.Tick(Time.unscaledDeltaTime);
             for (var i = 0; i < _moves.Length; i++)
             {
                 if (!_moves[i].WasPressedThisFrame()) continue;
 
-                var strike = AwakenedAttacks.Rook((PawnMove)i);
-                if (strike == null) return;
+                var strike = AwakenedStrikeFor((PawnMove)i);
+                if (strike == null) continue;
 
                 LastStrike = strike;
                 if (strike.Succeeded)
@@ -114,6 +120,14 @@ namespace ChessBoss.Game
 
                 return;
             }
+        }
+
+        AwakenedStrike AwakenedStrikeFor(PawnMove key)
+        {
+            if (Awakening.Active == AwakenPiece.Rook) return AwakenedAttacks.Rook(key);
+
+            var diagonal = _bishopInput.Press(key);
+            return diagonal == null ? null : AwakenedAttacks.Bishop(diagonal.Value);
         }
 
         void ShowAwakening()

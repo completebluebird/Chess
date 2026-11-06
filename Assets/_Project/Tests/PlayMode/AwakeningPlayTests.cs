@@ -48,9 +48,9 @@ namespace ChessBoss.Tests
             InputSystem.settings.editorInputBehaviorInPlayMode = _editorBehavior;
         }
 
-        IEnumerator Press(Key key)
+        IEnumerator Press(params Key[] keys)
         {
-            InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(key));
+            InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState(keys));
             yield return null;
             InputSystem.QueueStateEvent(Keyboard.current, new KeyboardState());
             yield return null;
@@ -107,6 +107,40 @@ namespace ChessBoss.Tests
             Assert.AreEqual(_tuning.bossHealth, _boss.Health.Current);
             Assert.AreEqual(0f, _pawn.Awakening.Gauge, 0.05f);
             Assert.AreEqual(1f, Time.timeScale);
+        }
+
+        [UnityTest]
+        public IEnumerator BishopForwardRight_FromKeysToLanding()
+        {
+            var start = _pawn.Movement.Position;
+            var moved = start.Y - 1;
+            FillGauge();
+
+            yield return Press(Key.Digit3);
+            Assert.AreEqual(AwakenPiece.Bishop, _pawn.Awakening.Active);
+
+            yield return Press(Key.W, Key.D);
+            Assert.IsNull(_pawn.Awakening.Active);
+            Assert.AreEqual(_pawn.Movement.Board.Step(new Cell(start.X, 1), moved + 2, 0), _pawn.Movement.Position);
+            Assert.AreEqual(_tuning.bossHealth - _tuning.awakenBaseDamage - moved * _tuning.awakenDamagePerRing, _boss.Health.Current);
+
+            yield return new WaitForSecondsRealtime(_tuning.hitstopDuration + _tuning.awakenTravelTime / _tuning.awakenTimeScale + 0.1f);
+            Assert.AreEqual(1f, Time.timeScale);
+            Assert.That(Vector3.Distance(_board.CellToWorld(_pawn.Movement.Position), _pawn.transform.position), Is.LessThan(0.01f));
+        }
+
+        [UnityTest]
+        public IEnumerator Bishop_IgnoresASingleKey_AndStaysAwakened()
+        {
+            var start = _pawn.Movement.Position;
+            FillGauge();
+            yield return Press(Key.Digit3);
+
+            yield return Press(Key.W);
+
+            Assert.AreEqual(AwakenPiece.Bishop, _pawn.Awakening.Active);
+            Assert.AreEqual(start, _pawn.Movement.Position);
+            Assert.AreEqual(_tuning.bossHealth, _boss.Health.Current);
         }
 
         [UnityTest]

@@ -20,7 +20,7 @@ namespace ChessBoss.Tests
         [Test]
         public void BossRing_IsOnBoardButNotWalkable()
         {
-            var board = new Board(24, 6);
+            var board = new Board(24, 8);
 
             for (var x = 0; x < 24; x++)
             {
@@ -37,10 +37,10 @@ namespace ChessBoss.Tests
         [TestCase(-1, 3)]
         [TestCase(24, 3)]
         [TestCase(0, -1)]
-        [TestCase(0, 6)]
+        [TestCase(0, 8)]
         public void CellsOutsideTheGrid_AreNotOnBoard(int x, int y)
         {
-            var board = new Board(24, 6);
+            var board = new Board(24, 8);
 
             Assert.IsFalse(board.Contains(new Cell(x, y)));
             Assert.IsFalse(board.IsBossCell(new Cell(x, y)));
@@ -60,7 +60,7 @@ namespace ChessBoss.Tests
         [TestCase(0, 1, -1, -1, 23, 0)]
         public void Step_WrapsAroundTheSectorSeam(int x, int y, int dx, int dy, int ex, int ey)
         {
-            var board = new Board(24, 6);
+            var board = new Board(24, 8);
 
             Assert.AreEqual(new Cell(ex, ey), board.Step(new Cell(x, y), dx, dy));
         }
@@ -68,7 +68,7 @@ namespace ChessBoss.Tests
         [Test]
         public void CheckerPattern_AlternatesAcrossEveryEdge_IncludingTheSeam()
         {
-            var board = new Board(24, 6);
+            var board = new Board(24, 8);
 
             foreach (var cell in board.Cells)
             {

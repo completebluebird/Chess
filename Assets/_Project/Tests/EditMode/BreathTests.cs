@@ -8,8 +8,9 @@ namespace ChessBoss.Tests
 {
     public class BreathTests
     {
-        const float HopTime = 0.15f;
-        const int Rings = 6;
+        const float MoveCooldown = 0.2f;
+        const float AttackCooldown = 0.4f;
+        const int Rings = 8;
 
         static readonly BossAttackSettings Settings = new BossAttackSettings
         {
@@ -128,7 +129,8 @@ namespace ChessBoss.Tests
 
             Assert.IsNotNull(path, $"{pawn} seed {seed}: no path to cover");
             Assert.LessOrEqual(path.Count, Settings.BreathCoverHops, $"{pawn} seed {seed}");
-            Assert.LessOrEqual(path.Count * HopTime, Settings.BreathPrep, $"{pawn} seed {seed}");
+            // Worst case: the pawn attacked just as the breath began, so it waits out that cooldown before the first hop.
+            Assert.LessOrEqual(AttackCooldown + (path.Count - 1) * MoveCooldown, Settings.BreathPrep, $"{pawn} seed {seed}");
         }
 
         // A separate search from the one the rule uses, so the test can't inherit its mistakes.

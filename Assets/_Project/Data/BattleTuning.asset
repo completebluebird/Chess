@@ -95,3 +95,4 @@ MonoBehaviour:
   knightDamage: 6
   knightAttackRadius: 1
   landingInvulnerable: 0.5
+  battleResultDelay: 1.5

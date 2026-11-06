@@ -3,7 +3,8 @@
     "rootNamespace": "ChessBoss.Game",
     "references": [
         "ChessBoss.Core",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

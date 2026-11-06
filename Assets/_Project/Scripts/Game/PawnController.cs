@@ -77,6 +77,9 @@ namespace ChessBoss.Game
 
         void Update()
         {
+            // The awakening window and the keys run on real time, which a pause doesn't stop by itself.
+            if (BattleTime.IsPaused) return;
+
             _actions.Tick(Time.deltaTime);
             Awakening.Tick(Time.deltaTime, Time.unscaledDeltaTime);
             var alive = !Vitals.Health.IsDead;

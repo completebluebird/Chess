@@ -14,6 +14,7 @@ namespace ChessBoss.Game
         bool _hittable;
         bool _stunned;
         Transform _head;
+        float _fallenFor;
 
         Color RestColor => _stunned ? _board.Tuning.bossStunColor : _board.Tuning.bossColor;
 
@@ -78,6 +79,8 @@ namespace ChessBoss.Game
                 if (_hitstopRemaining <= 0) BattleTime.Stopped = false;
             }
 
+            if (Health.IsDead) Fall();
+
             if (_flashRemaining > 0)
             {
                 _flashRemaining -= Time.unscaledDeltaTime;
@@ -89,6 +92,18 @@ namespace ChessBoss.Game
                 var blink = Mathf.PingPong(Time.unscaledTime * 2 / tuning.bossBlinkPeriod, 1);
                 _board.Paint(_body, Color.Lerp(RestColor, tuning.attackableColor, blink));
             }
+        }
+
+        // shortcut: sinks into the floor instead of a defeat animation, the dragon's own replaces it in M9.
+        void Fall()
+        {
+            var tuning = _board.Tuning;
+            if (_fallenFor >= tuning.battleResultDelay) return;
+
+            _fallenFor += Time.unscaledDeltaTime;
+            var down = Vector3.down * ((tuning.bossHeight + tuning.bossHeadSize.y) * Time.unscaledDeltaTime / tuning.battleResultDelay);
+            _body.transform.position += down;
+            _head.position += down;
         }
 
         void OnDisable()

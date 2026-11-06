@@ -94,5 +94,8 @@ namespace ChessBoss.Game
         public int knightDamage;
         public int knightAttackRadius;
         public float landingInvulnerable;
+
+        [Header("Flow")]
+        public float battleResultDelay;
     }
 }

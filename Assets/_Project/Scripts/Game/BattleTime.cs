@@ -8,6 +8,7 @@ namespace ChessBoss.Game
         static float _slowMotion = 1;
         static float _stunSlowMotion = 1;
         static bool _stopped;
+        static bool _paused;
 
         public static float SlowMotion
         {
@@ -27,6 +28,17 @@ namespace ChessBoss.Game
             }
         }
 
+        public static bool IsPaused => _paused;
+
+        public static bool Paused
+        {
+            set
+            {
+                _paused = value;
+                Apply();
+            }
+        }
+
         public static bool Stopped
         {
             set
@@ -36,6 +48,6 @@ namespace ChessBoss.Game
             }
         }
 
-        static void Apply() => Time.timeScale = _stopped ? 0 : Mathf.Min(_slowMotion, _stunSlowMotion);
+        static void Apply() => Time.timeScale = _stopped || _paused ? 0 : Mathf.Min(_slowMotion, _stunSlowMotion);
     }
 }

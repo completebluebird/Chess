@@ -26,6 +26,9 @@ namespace ChessBoss.Core
 
         public void Tick(float deltaTime) => _remaining = Math.Max(0, _remaining - deltaTime);
 
+        /// <summary>For attacks whose cooldown isn't a fixed length, such as those of awakened pieces.</summary>
+        public void StartCooldown(float seconds) => _remaining = seconds;
+
         /// <summary>A move the board refuses costs nothing, so holding a key against an edge doesn't lock the pawn.</summary>
         public bool TryMove(PawnMove move)
         {

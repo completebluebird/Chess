@@ -75,5 +75,17 @@ namespace ChessBoss.Game
         public float burnDuration;
         public float burnTickTime;
         public int burnTickDamage;
+
+        [Header("Awakening")]
+        public float awakenChargeTime;
+        public float awakenInputWindow;
+        public float awakenTimeScale;
+        public float awakenTravelTime;
+        public Color awakenedColor;
+        public int awakenBaseDamage;
+        public int awakenDamagePerRing;
+        public float awakenCooldownPerRing;
+        public int rookRingHitDamage;
+        public float landingInvulnerable;
     }
 }

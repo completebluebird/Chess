@@ -1,3 +1,4 @@
+using System.Linq;
 using ChessBoss.Core;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -14,18 +15,22 @@ namespace ChessBoss.Game
         readonly InputAction[] _moves = new InputAction[4];
         InputAction _attackLeft;
         InputAction _attackRight;
+        InputAction _awakenRook;
         PawnMovement _movement;
         PawnCombat _combat;
         PawnActions _actions;
         Tween _hop;
-        Vector3 _hopFrom;
-        Vector3 _hopTo;
+        Vector3[] _hopPath;
+        AwakenPiece? _shownPiece;
         PawnMove? _lastPressed;
 
         public PawnMovement Movement => _movement;
         public PawnCombat Combat => _combat;
         public PlayerVitals Vitals { get; private set; }
+        public Awakening Awakening { get; private set; }
+        public AwakenedAttacks AwakenedAttacks { get; private set; }
         public PawnAttackResult? LastAttack { get; private set; }
+        public AwakenedStrike LastStrike { get; private set; }
 
         void Awake()
         {
@@ -44,9 +49,20 @@ namespace ChessBoss.Game
             _moves[(int)PawnMove.Right] = actions.FindAction("Right", true);
             _attackLeft = actions.FindAction("AttackLeft", true);
             _attackRight = actions.FindAction("AttackRight", true);
+            _awakenRook = actions.FindAction("AwakenRook", true);
 
             _combat = new PawnCombat(_movement, _boss.Health, tuning.attackDamage);
             _actions = new PawnActions(_movement, _combat, tuning.moveCooldown, tuning.attackCooldown);
+            Awakening = new Awakening(tuning.awakenChargeTime, tuning.awakenInputWindow);
+            AwakenedAttacks = new AwakenedAttacks(_movement, _boss.Health, Vitals, _actions, Awakening, new AwakenSettings
+            {
+                BaseDamage = tuning.awakenBaseDamage,
+                DamagePerRing = tuning.awakenDamagePerRing,
+                AttackCooldown = tuning.attackCooldown,
+                CooldownPerRing = tuning.awakenCooldownPerRing,
+                RookRingHitDamage = tuning.rookRingHitDamage,
+                LandingInvulnerable = tuning.landingInvulnerable,
+            });
         }
 
         void Start() => RefreshAttackMarks();
@@ -54,17 +70,63 @@ namespace ChessBoss.Game
         void Update()
         {
             _actions.Tick(Time.deltaTime);
+            Awakening.Tick(Time.deltaTime, Time.unscaledDeltaTime);
             var alive = !Vitals.Health.IsDead;
-            if (alive && _attackLeft.WasPressedThisFrame()) Attack(PawnAttackSide.Left);
-            if (alive && _attackRight.WasPressedThisFrame()) Attack(PawnAttackSide.Right);
-            _boss.SetHittable(alive && _combat.CanHitBoss);
+            var fighting = alive && !_boss.Health.IsDead;
+            if (!fighting) Awakening.End();
+            else if (_awakenRook.WasPressedThisFrame()) Awakening.TryAwaken(AwakenPiece.Rook);
 
-            var move = alive ? HeldMove() : null;
-            if (move != null) TryStartHop(move.Value);
+            if (Awakening.Active != null) ReadAwakenedAttack();
+            else if (alive) ReadPawnInput();
+
+            ShowAwakening();
+            _boss.SetHittable(alive && Awakening.Active == null && _combat.CanHitBoss);
 
             if (_hop.Running)
                 AnimateHop(_hop.Tick(Time.deltaTime));
         }
+
+        void ReadPawnInput()
+        {
+            if (_attackLeft.WasPressedThisFrame()) Attack(PawnAttackSide.Left);
+            if (_attackRight.WasPressedThisFrame()) Attack(PawnAttackSide.Right);
+
+            var move = HeldMove();
+            if (move != null) TryStartHop(move.Value);
+        }
+
+        // A fresh press only, so a key still held from walking doesn't fire the one attack by accident.
+        void ReadAwakenedAttack()
+        {
+            for (var i = 0; i < _moves.Length; i++)
+            {
+                if (!_moves[i].WasPressedThisFrame()) continue;
+
+                var strike = AwakenedAttacks.Rook((PawnMove)i);
+                if (strike == null) return;
+
+                LastStrike = strike;
+                if (strike.Succeeded)
+                {
+                    StartHop(strike.Path.Select(_board.CellToWorld).ToArray(), _board.Tuning.awakenTravelTime);
+                    _boss.PlayHit();
+                }
+
+                return;
+            }
+        }
+
+        void ShowAwakening()
+        {
+            if (_shownPiece == Awakening.Active) return;
+
+            _shownPiece = Awakening.Active;
+            var tuning = _board.Tuning;
+            _board.Paint(_body, _shownPiece == null ? tuning.pawnColor : tuning.awakenedColor);
+            BattleTime.SlowMotion = _shownPiece == null ? 1 : tuning.awakenTimeScale;
+        }
+
+        void OnDisable() => BattleTime.SlowMotion = 1;
 
         // The key pressed last wins while it is down. Nothing is remembered past its release, so there is no buffer.
         PawnMove? HeldMove()
@@ -92,9 +154,13 @@ namespace ChessBoss.Game
             var from = _movement.Position;
             if (!_actions.TryMove(move)) return;
 
-            _hopFrom = _board.CellToWorld(from);
-            _hopTo = _board.CellToWorld(_movement.Position);
-            _hop.Start(_board.Tuning.moveDuration);
+            StartHop(new[] { _board.CellToWorld(from), _board.CellToWorld(_movement.Position) }, _board.Tuning.moveDuration);
+        }
+
+        void StartHop(Vector3[] path, float duration)
+        {
+            _hopPath = path;
+            _hop.Start(duration);
             RefreshAttackMarks();
         }
 
@@ -117,7 +183,9 @@ namespace ChessBoss.Game
         {
             var tuning = _board.Tuning;
             var arc = Mathf.Sin(progress * Mathf.PI);
-            transform.position = Vector3.Lerp(_hopFrom, _hopTo, progress) + Vector3.up * (arc * tuning.jumpHeight);
+            var along = progress * (_hopPath.Length - 1);
+            var segment = Mathf.Min((int)along, _hopPath.Length - 2);
+            transform.position = Vector3.Lerp(_hopPath[segment], _hopPath[segment + 1], along - segment) + Vector3.up * (arc * tuning.jumpHeight);
 
             // Stretches on the way up and squashes into the landing, and ends at rest scale.
             var height = 1 + tuning.squash * Mathf.Sin(progress * 2 * Mathf.PI);

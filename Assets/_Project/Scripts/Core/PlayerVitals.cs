@@ -17,6 +17,9 @@ namespace ChessBoss.Core
         public bool IsInvulnerable => _invulnerableLeft > 0;
         public bool IsBurning => _burnTicksLeft > 0;
 
+        /// <summary>A hit landed on the player. Blocked hits and burn ticks don't count.</summary>
+        public event Action Hurt;
+
         public PlayerVitals(int maxHealth, float invulnerableTime, float burnDuration, float burnTickTime, int burnTickDamage)
         {
             if (burnTickTime <= 0)
@@ -43,8 +46,12 @@ namespace ChessBoss.Core
                 _burnTicksLeft = _burnTicks;
             }
 
+            Hurt?.Invoke();
             return true;
         }
+
+        /// <summary>Overlapping invulnerability keeps only the longer one, so it can't chain into something endless.</summary>
+        public void GrantInvulnerability(float seconds) => _invulnerableLeft = Math.Max(_invulnerableLeft, seconds);
 
         public void Tick(float deltaTime)
         {

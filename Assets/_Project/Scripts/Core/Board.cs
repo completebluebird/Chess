@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ChessBoss.Core
 {
@@ -72,6 +73,8 @@ namespace ChessBoss.Core
 
             return hops;
         }
+
+        public Cell NearestWalkable(Cell cell) => HopsFrom(cell, new Cell[0]).OrderBy(hop => hop.Value).First(hop => IsWalkable(hop.Key)).Key;
 
         /// <summary>The cell the given sectors and rings away. Sectors wrap; rings can leave the board.</summary>
         public Cell Step(Cell from, int sectors, int rings) =>

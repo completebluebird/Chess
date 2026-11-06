@@ -35,6 +35,9 @@ namespace ChessBoss.Core
             return true;
         }
 
+        /// <summary>Ends a jump at the cell, or at the nearest free one if it is blocked. Warned cells count as free.</summary>
+        public void Land(Cell target) => Position = _board.NearestWalkable(target);
+
         Cell TargetOf(PawnMove move)
         {
             switch (move)

@@ -76,3 +76,13 @@ MonoBehaviour:
   burnDuration: 3
   burnTickTime: 0.5
   burnTickDamage: 1
+  awakenChargeTime: 20
+  awakenInputWindow: 3
+  awakenTimeScale: 0.6
+  awakenTravelTime: 0.25
+  awakenedColor: {r: 1, g: 0.75, b: 0.2, a: 1}
+  awakenBaseDamage: 4
+  awakenDamagePerRing: 1
+  awakenCooldownPerRing: 0.1
+  rookRingHitDamage: 1
+  landingInvulnerable: 0.5

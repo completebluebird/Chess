@@ -21,6 +21,8 @@ namespace ChessBoss.Core
         public float Gauge => Math.Min(1, _charged / _chargeTime);
         public float WindowLeft => _windowLeft;
 
+        public event Action Ended;
+
         public Awakening(float chargeTime, float inputWindow)
         {
             if (chargeTime <= 0)
@@ -54,6 +56,12 @@ namespace ChessBoss.Core
         }
 
         /// <summary>Ends however it ended: used, timed out or cancelled. The gauge is never refunded.</summary>
-        public void End() => Active = null;
+        public void End()
+        {
+            if (Active == null) return;
+
+            Active = null;
+            Ended?.Invoke();
+        }
     }
 }

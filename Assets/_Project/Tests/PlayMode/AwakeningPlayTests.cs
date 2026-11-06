@@ -144,6 +144,40 @@ namespace ChessBoss.Tests
         }
 
         [UnityTest]
+        public IEnumerator Knight_ShowsCandidates_ThenJumps_FromKeysToLanding()
+        {
+            var board = _pawn.Movement.Board;
+            var start = _pawn.Movement.Position;
+            yield return Press(Key.W);
+            yield return new WaitForSecondsRealtime(_tuning.moveCooldown + 0.05f);
+            Assert.AreEqual(new Cell(start.X, start.Y - 1), _pawn.Movement.Position);
+            FillGauge();
+
+            yield return Press(Key.Digit2);
+            Assert.AreEqual(AwakenPiece.Knight, _pawn.Awakening.Active);
+            Assert.AreEqual(_tuning.awakenTimeScale, Time.timeScale, 1e-4f);
+            var landing = board.Step(_pawn.Movement.Position, 1, -2);
+            Assert.AreEqual(CellMark.None, _board.Marks.MarkOf(landing));
+
+            yield return Press(Key.W);
+            Assert.AreEqual(CellMark.Attackable, _board.Marks.MarkOf(landing));
+            Assert.AreEqual(CellMark.Attackable, _board.Marks.MarkOf(board.Step(_pawn.Movement.Position, -1, -2)));
+
+            yield return Press(Key.S);
+            Assert.AreEqual(AwakenPiece.Knight, _pawn.Awakening.Active, "the opposite key is ignored");
+
+            yield return Press(Key.D);
+            Assert.IsNull(_pawn.Awakening.Active);
+            Assert.AreEqual(landing, _pawn.Movement.Position);
+            Assert.AreEqual(_tuning.bossHealth - _tuning.knightDamage, _boss.Health.Current);
+            Assert.AreEqual(CellMark.None, _board.Marks.MarkOf(board.Step(landing, 2, 0)));
+
+            yield return new WaitForSecondsRealtime(_tuning.hitstopDuration + _tuning.awakenTravelTime / _tuning.awakenTimeScale + 0.1f);
+            Assert.AreEqual(1f, Time.timeScale);
+            Assert.That(Vector3.Distance(_board.CellToWorld(landing), _pawn.transform.position), Is.LessThan(0.01f));
+        }
+
+        [UnityTest]
         public IEnumerator PawnAttacks_DoNothing_WhileAwakened()
         {
             FillGauge();

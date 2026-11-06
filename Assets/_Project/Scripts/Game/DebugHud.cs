@@ -19,9 +19,9 @@ namespace ChessBoss.Game
             GUILayout.Label($"Player HP: {vitals.Health.Current} / {vitals.Health.Max}{(vitals.IsBurning ? "  BURNING" : "")}{(vitals.IsInvulnerable ? "  INVULNERABLE" : "")}{(vitals.Health.IsDead ? "  DEFEAT" : "")}");
             var awakening = _pawn.Awakening;
             GUILayout.Label(awakening.Active == null
-                ? $"Gauge: {awakening.Gauge:P0}{(awakening.Gauge >= 1 ? "  press 1 Rook, 3 Bishop" : "")}"
+                ? $"Gauge: {awakening.Gauge:P0}{(awakening.Gauge >= 1 ? "  press 1 Rook, 2 Knight, 3 Bishop" : "")}"
                 : $"Awakened: {awakening.Active}  {awakening.WindowLeft:0.0}s");
-            GUILayout.Label($"Last strike: {(_pawn.LastStrike == null ? "-" : _pawn.LastStrike.Succeeded ? $"hit, moved {_pawn.LastStrike.RingsMoved} rings" : "failed")}");
+            GUILayout.Label($"Last strike: {(_pawn.LastStrike == null ? "-" : _pawn.LastStrike.Succeeded ? $"{_pawn.LastStrike.Damage} damage, moved {_pawn.LastStrike.RingsMoved} rings" : "failed")}");
             GUILayout.Label($"Pawn: {_pawn.Movement.Position}");
             GUILayout.Label($"Q: {Reach(board, combat, PawnAttackSide.Left)}  E: {Reach(board, combat, PawnAttackSide.Right)}");
             GUILayout.Label($"Last attack: {_pawn.LastAttack}");

@@ -18,6 +18,8 @@ namespace ChessBoss.Core
         public float AttackCooldown;
         public float CooldownPerRing;
         public int RookRingHitDamage;
+        public int KnightDamage;
+        public int KnightRadius;
         public float LandingInvulnerable;
     }
 
@@ -27,9 +29,11 @@ namespace ChessBoss.Core
         public bool Succeeded { get; }
         public IReadOnlyList<Cell> Path { get; }
         public int RingsMoved { get; }
+        public int Damage { get; }
 
-        public AwakenedStrike(bool succeeded, IReadOnlyList<Cell> path, int ringsMoved)
+        public AwakenedStrike(bool succeeded, IReadOnlyList<Cell> path, int ringsMoved, int damage)
         {
+            Damage = damage;
             Succeeded = succeeded;
             Path = path;
             RingsMoved = ringsMoved;
@@ -45,6 +49,7 @@ namespace ChessBoss.Core
         readonly PawnActions _actions;
         readonly Awakening _awakening;
         readonly AwakenSettings _settings;
+        PawnMove? _knightFirst;
 
         public AwakenedAttacks(PawnMovement pawn, Health boss, PlayerVitals vitals, PawnActions actions, Awakening awakening, AwakenSettings settings)
         {
@@ -55,7 +60,11 @@ namespace ChessBoss.Core
             _awakening = awakening;
             _settings = settings;
             _vitals.Hurt += _awakening.End;
+            _awakening.Ended += () => _knightFirst = null;
         }
+
+        /// <summary>The cells the knight's first key leaves to choose from. Off-board ones aren't offered.</summary>
+        public IReadOnlyList<Cell> KnightCandidates => _knightFirst == null ? new Cell[0] : CandidatesOf(_knightFirst.Value);
 
         /// <summary>Null when no rook is waiting or the shared cooldown still runs, so the key press did nothing.</summary>
         public AwakenedStrike Rook(PawnMove direction)
@@ -74,7 +83,7 @@ namespace ChessBoss.Core
             if (start.Y != Board.BossRing + 1)
             {
                 _actions.StartCooldown(_settings.AttackCooldown);
-                return new AwakenedStrike(false, new[] { start }, 0);
+                return new AwakenedStrike(false, new[] { start }, 0, 0);
             }
 
             var board = _pawn.Board;
@@ -98,6 +107,60 @@ namespace ChessBoss.Core
             path.Add(_pawn.Board.Step(path[moved], way + 1, 0));
             return Finish(path, moved, _settings.BaseDamage + moved * _settings.DamagePerRing, moved);
         }
+
+        /// <summary>Feed it each key. Null until a key completes a jump: a key that makes no valid choice changes nothing.</summary>
+        public AwakenedStrike Knight(PawnMove key)
+        {
+            if (_awakening.Active != AwakenPiece.Knight) return null;
+
+            if (_knightFirst == null)
+            {
+                // A key with nothing to choose from would lock the piece until its time ran out.
+                if (CandidatesOf(key).Count > 0) _knightFirst = key;
+                return null;
+            }
+
+            if (IsSideways(key) == IsSideways(_knightFirst.Value) || !_actions.IsReady) return null;
+
+            var board = _pawn.Board;
+            var target = KnightLanding(_knightFirst.Value, key);
+            if (!board.Contains(target)) return null;
+
+            _awakening.End();
+            var start = _pawn.Position;
+            var landsOnBoss = board.IsBossCell(target);
+            var landing = landsOnBoss ? start : board.NearestWalkable(target);
+
+            // The boss fills its whole ring, so an area around the landing reaches it exactly when the ring is that close.
+            var damage = landing.Y <= _settings.KnightRadius || landsOnBoss ? _settings.KnightDamage : 0;
+            return Finish(landsOnBoss ? new[] { start, target, start } : new[] { start, landing }, 0, damage, 0);
+        }
+
+        List<Cell> CandidatesOf(PawnMove first)
+        {
+            var sides = IsSideways(first) ? new[] { PawnMove.Forward, PawnMove.Back } : new[] { PawnMove.Left, PawnMove.Right };
+            return sides.Select(side => KnightLanding(first, side)).Where(_pawn.Board.Contains).ToList();
+        }
+
+        Cell KnightLanding(PawnMove first, PawnMove second)
+        {
+            var (firstSectors, firstRings) = Offset(first);
+            var (secondSectors, secondRings) = Offset(second);
+            return _pawn.Board.Step(_pawn.Position, firstSectors * 2 + secondSectors, firstRings * 2 + secondRings);
+        }
+
+        static (int sectors, int rings) Offset(PawnMove key)
+        {
+            switch (key)
+            {
+                case PawnMove.Forward: return (0, -1);
+                case PawnMove.Back: return (0, 1);
+                case PawnMove.Left: return (-1, 0);
+                default: return (1, 0);
+            }
+        }
+
+        static bool IsSideways(PawnMove key) => key == PawnMove.Left || key == PawnMove.Right;
 
         // Keeps going the same way around the board, bouncing off the outer edge when sent backward.
         List<Cell> BishopLine(Cell start, int way, bool backFirst)
@@ -134,7 +197,7 @@ namespace ChessBoss.Core
             _vitals.GrantInvulnerability(_settings.LandingInvulnerable);
             _boss.TakeDamage(damage);
             _actions.StartCooldown(_settings.AttackCooldown + cooldownRings * _settings.CooldownPerRing);
-            return new AwakenedStrike(true, path, ringsMoved);
+            return new AwakenedStrike(true, path, ringsMoved, damage);
         }
     }
 }

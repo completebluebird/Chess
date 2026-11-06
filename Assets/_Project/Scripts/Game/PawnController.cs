@@ -17,6 +17,7 @@ namespace ChessBoss.Game
         InputAction _attackRight;
         InputAction _awakenRook;
         InputAction _awakenBishop;
+        InputAction _awakenKnight;
         BishopInput _bishopInput;
         PawnMovement _movement;
         PawnCombat _combat;
@@ -53,6 +54,7 @@ namespace ChessBoss.Game
             _attackRight = actions.FindAction("AttackRight", true);
             _awakenRook = actions.FindAction("AwakenRook", true);
             _awakenBishop = actions.FindAction("AwakenBishop", true);
+            _awakenKnight = actions.FindAction("AwakenKnight", true);
 
             _combat = new PawnCombat(_movement, _boss.Health, tuning.attackDamage);
             _actions = new PawnActions(_movement, _combat, tuning.moveCooldown, tuning.attackCooldown);
@@ -65,6 +67,8 @@ namespace ChessBoss.Game
                 AttackCooldown = tuning.attackCooldown,
                 CooldownPerRing = tuning.awakenCooldownPerRing,
                 RookRingHitDamage = tuning.rookRingHitDamage,
+                KnightDamage = tuning.knightDamage,
+                KnightRadius = tuning.knightAttackRadius,
                 LandingInvulnerable = tuning.landingInvulnerable,
             });
         }
@@ -80,12 +84,15 @@ namespace ChessBoss.Game
             if (!fighting) Awakening.End();
             else if (_awakenRook.WasPressedThisFrame()) Awakening.TryAwaken(AwakenPiece.Rook);
             else if (_awakenBishop.WasPressedThisFrame()) Awakening.TryAwaken(AwakenPiece.Bishop);
+            else if (_awakenKnight.WasPressedThisFrame()) Awakening.TryAwaken(AwakenPiece.Knight);
 
             if (Awakening.Active != null) ReadAwakenedAttack();
             else if (alive) ReadPawnInput();
 
             ShowAwakening();
-            _boss.SetHittable(alive && Awakening.Active == null && _combat.CanHitBoss);
+            _boss.SetHittable(alive && (Awakening.Active == null
+                ? _combat.CanHitBoss
+                : AwakenedAttacks.KnightCandidates.Any(_movement.Board.IsBossCell)));
 
             if (_hop.Running)
                 AnimateHop(_hop.Tick(Time.deltaTime));
@@ -109,15 +116,15 @@ namespace ChessBoss.Game
                 if (!_moves[i].WasPressedThisFrame()) continue;
 
                 var strike = AwakenedStrikeFor((PawnMove)i);
-                if (strike == null) continue;
-
-                LastStrike = strike;
-                if (strike.Succeeded)
+                if (strike == null)
                 {
-                    StartHop(strike.Path.Select(_board.CellToWorld).ToArray(), _board.Tuning.awakenTravelTime);
-                    _boss.PlayHit();
+                    RefreshAttackMarks();
+                    continue;
                 }
 
+                LastStrike = strike;
+                if (strike.Succeeded) StartHop(strike.Path.Select(_board.CellToWorld).ToArray(), _board.Tuning.awakenTravelTime);
+                if (strike.Damage > 0) _boss.PlayHit();
                 return;
             }
         }
@@ -125,6 +132,7 @@ namespace ChessBoss.Game
         AwakenedStrike AwakenedStrikeFor(PawnMove key)
         {
             if (Awakening.Active == AwakenPiece.Rook) return AwakenedAttacks.Rook(key);
+            if (Awakening.Active == AwakenPiece.Knight) return AwakenedAttacks.Knight(key);
 
             var diagonal = _bishopInput.Press(key);
             return diagonal == null ? null : AwakenedAttacks.Bishop(diagonal.Value);
@@ -138,6 +146,7 @@ namespace ChessBoss.Game
             var tuning = _board.Tuning;
             _board.Paint(_body, _shownPiece == null ? tuning.pawnColor : tuning.awakenedColor);
             BattleTime.SlowMotion = _shownPiece == null ? 1 : tuning.awakenTimeScale;
+            RefreshAttackMarks();
         }
 
         void OnDisable() => BattleTime.SlowMotion = 1;
@@ -189,7 +198,7 @@ namespace ChessBoss.Game
 
         void RefreshAttackMarks()
         {
-            _board.Marks.SetAttackable(_combat.AttackableCells);
+            _board.Marks.SetAttackable(Awakening.Active == null ? _combat.AttackableCells : AwakenedAttacks.KnightCandidates);
             _board.RefreshMarks();
         }
 

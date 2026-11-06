@@ -129,6 +129,21 @@ namespace ChessBoss.Tests
             Assert.IsFalse(vitals.Hit(Damage, false));
         }
 
+        [TestCase(0.2f, 0.5f, 0.5f)]
+        [TestCase(0.45f, 0.1f, 0.45f)]
+        public void Invulnerability_Overlapping_KeepsOnlyTheLonger_WithoutAdding(float running, float granted, float expected)
+        {
+            var vitals = new PlayerVitals(MaxHealth, 0, BurnDuration, BurnTick, BurnDamage);
+            vitals.GrantInvulnerability(running);
+
+            vitals.GrantInvulnerability(granted);
+
+            vitals.Tick(expected - 0.01f);
+            Assert.IsTrue(vitals.IsInvulnerable);
+            vitals.Tick(0.02f);
+            Assert.IsFalse(vitals.IsInvulnerable);
+        }
+
         [TestCase(0f)]
         [TestCase(-1f)]
         public void NonPositiveBurnTick_Throws(float tick)

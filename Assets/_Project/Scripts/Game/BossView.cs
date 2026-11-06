@@ -52,14 +52,13 @@ namespace ChessBoss.Game
             if (!hittable && _flashRemaining <= 0) _board.Paint(_body, _board.Tuning.bossColor);
         }
 
-        // shortcut: hitstop assumes the normal time scale is 1, move to shared time control when M5 adds slow motion.
         public void PlayHit()
         {
             var tuning = _board.Tuning;
             _board.Paint(_body, tuning.bossFlashColor);
             _flashRemaining = tuning.bossFlashDuration;
             _hitstopRemaining = tuning.hitstopDuration;
-            Time.timeScale = 0;
+            BattleTime.Stopped = true;
         }
 
         void Update()
@@ -67,7 +66,7 @@ namespace ChessBoss.Game
             if (_hitstopRemaining > 0)
             {
                 _hitstopRemaining -= Time.unscaledDeltaTime;
-                if (_hitstopRemaining <= 0) Time.timeScale = 1;
+                if (_hitstopRemaining <= 0) BattleTime.Stopped = false;
             }
 
             if (_flashRemaining > 0)
@@ -85,7 +84,7 @@ namespace ChessBoss.Game
 
         void OnDisable()
         {
-            if (_hitstopRemaining > 0) Time.timeScale = 1;
+            if (_hitstopRemaining > 0) BattleTime.Stopped = false;
         }
     }
 }

@@ -17,6 +17,11 @@ namespace ChessBoss.Game
             GUILayout.Label($"Boss HP: {_boss.Health.Current} / {_boss.Health.Max}");
             var vitals = _pawn.Vitals;
             GUILayout.Label($"Player HP: {vitals.Health.Current} / {vitals.Health.Max}{(vitals.IsBurning ? "  BURNING" : "")}{(vitals.IsInvulnerable ? "  INVULNERABLE" : "")}{(vitals.Health.IsDead ? "  DEFEAT" : "")}");
+            var awakening = _pawn.Awakening;
+            GUILayout.Label(awakening.Active == null
+                ? $"Gauge: {awakening.Gauge:P0}{(awakening.Gauge >= 1 ? "  press 1 for Rook" : "")}"
+                : $"Awakened: {awakening.Active}  {awakening.WindowLeft:0.0}s");
+            GUILayout.Label($"Last strike: {(_pawn.LastStrike == null ? "-" : _pawn.LastStrike.Succeeded ? $"hit, moved {_pawn.LastStrike.RingsMoved} rings" : "failed")}");
             GUILayout.Label($"Pawn: {_pawn.Movement.Position}");
             GUILayout.Label($"Q: {Reach(board, combat, PawnAttackSide.Left)}  E: {Reach(board, combat, PawnAttackSide.Right)}");
             GUILayout.Label($"Last attack: {_pawn.LastAttack}");

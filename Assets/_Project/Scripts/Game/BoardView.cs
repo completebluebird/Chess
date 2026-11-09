@@ -12,6 +12,7 @@ namespace ChessBoss.Game
         [SerializeField] Renderer _boss;
 
         readonly Dictionary<Cell, Renderer> _tiles = new Dictionary<Cell, Renderer>();
+        readonly Dictionary<Cell, Color> _shown = new Dictionary<Cell, Color>();
         readonly Dictionary<Cell, GameObject> _walls = new Dictionary<Cell, GameObject>();
         readonly List<Cell> _removedWalls = new List<Cell>();
         MaterialPropertyBlock _block;
@@ -104,8 +105,16 @@ namespace ChessBoss.Game
 
         public void RefreshMarks()
         {
+            // Called every frame while a warning is up, so only tiles whose color changed are repainted.
+            // Repainting all of them each frame sets a property block on every tile renderer and floods the graphics ring buffer.
             foreach (var tile in _tiles)
-                Paint(tile.Value, ColorOf(tile.Key));
+            {
+                var color = ColorOf(tile.Key);
+                if (_shown.TryGetValue(tile.Key, out var last) && last == color) continue;
+
+                _shown[tile.Key] = color;
+                Paint(tile.Value, color);
+            }
         }
 
         void CreateTile(Cell cell, Mesh mesh)
@@ -117,7 +126,9 @@ namespace ChessBoss.Game
 
             var renderer = tile.GetComponent<Renderer>();
             _tiles.Add(cell, renderer);
-            Paint(renderer, ColorOf(cell));
+            var color = ColorOf(cell);
+            _shown[cell] = color;
+            Paint(renderer, color);
         }
 
         float RingRadius(float ring) => _tuning.boardInnerRadius + ring * _tuning.cellSize;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -17,7 +18,7 @@ namespace ChessBoss.Core
         public int DamagePerRing;
         public float AttackCooldown;
         public float CooldownPerRing;
-        public int RookRingHitDamage;
+        public float RookRingHitDamage;
         public int KnightDamage;
         public int KnightRadius;
         public float LandingInvulnerable;
@@ -89,7 +90,7 @@ namespace ChessBoss.Core
             var board = _pawn.Board;
             var way = direction == PawnMove.Left ? -1 : 1;
             var ring = Enumerable.Range(0, board.Sectors + 1).Select(i => board.Step(start, way * i, 0)).ToArray();
-            return Finish(ring, 0, board.Sectors * _settings.RookRingHitDamage, 0);
+            return Finish(ring, 0, (int)Math.Round(board.Sectors * _settings.RookRingHitDamage), 0);
         }
 
         /// <summary>Null when no bishop is waiting or the shared cooldown still runs, so the keys did nothing.</summary>

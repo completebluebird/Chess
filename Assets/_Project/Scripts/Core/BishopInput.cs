@@ -15,6 +15,9 @@ namespace ChessBoss.Core
             if (_firstLeft <= 0) _first = null;
         }
 
+        /// <summary>Forgets a key waiting for a partner, so it can't pair with one pressed in a later awakening.</summary>
+        public void Clear() => _first = null;
+
         /// <summary>The diagonal this key completes, or null while it only waits for a partner.</summary>
         public BishopMove? Press(PawnMove key)
         {

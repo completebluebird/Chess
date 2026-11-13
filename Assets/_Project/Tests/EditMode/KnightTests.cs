@@ -32,7 +32,7 @@ namespace ChessBoss.Tests
                 DamagePerRing = 1,
                 AttackCooldown = Cooldown,
                 CooldownPerRing = 0.1f,
-                RookRingHitDamage = 1,
+                RookRingHitDamage = 0.5f,
                 KnightDamage = Damage,
                 KnightRadius = 1,
                 LandingInvulnerable = 0.5f,

@@ -105,7 +105,7 @@ namespace ChessBoss.Tests
                 DamagePerRing = PerRing,
                 AttackCooldown = BaseCooldown,
                 CooldownPerRing = CooldownPerRing,
-                RookRingHitDamage = 1,
+                RookRingHitDamage = 0.5f,
                 LandingInvulnerable = Landing,
             });
             _awakening.Tick(20, 20);
@@ -166,6 +166,18 @@ namespace ChessBoss.Tests
             Assert.AreEqual(new Cell(18, 1), _pawn.Position);
         }
 
+        [Test]
+        public void RookForward_FromTheRingBeforeTheBoss_NeverLeavesItsCell()
+        {
+            Setup(5, 1);
+
+            var strike = _attacks.Rook(PawnMove.Forward);
+
+            Assert.IsTrue(strike.Succeeded);
+            Assert.AreEqual(1, strike.Path.Count);
+            Assert.AreEqual(new Cell(5, 1), _pawn.Position);
+        }
+
         [TestCase(PawnMove.Left, -1)]
         [TestCase(PawnMove.Right, 1)]
         public void RookSideways_OnTheBossRing_CirclesOnce_HittingPerCell_AndReturns(PawnMove move, int direction)
@@ -181,7 +193,7 @@ namespace ChessBoss.Tests
             Assert.AreEqual(_board.Step(new Cell(0, 1), direction, 0), strike.Path[1]);
             Assert.IsTrue(strike.Path.All(cell => cell.Y == 1));
             Assert.AreEqual(Sectors, strike.Path.Distinct().Count());
-            Assert.AreEqual(100 - Sectors, _boss.Current);
+            Assert.AreEqual(100 - Sectors / 2, _boss.Current);
             AssertCooldown(BaseCooldown);
         }
 

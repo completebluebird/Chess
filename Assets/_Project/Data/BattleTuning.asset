@@ -90,7 +90,7 @@ MonoBehaviour:
   awakenBaseDamage: 4
   awakenDamagePerRing: 1
   awakenCooldownPerRing: 0.1
-  rookRingHitDamage: 1
+  rookRingHitDamage: 0.5
   bishopInputBuffer: 0.1
   knightDamage: 6
   knightAttackRadius: 1

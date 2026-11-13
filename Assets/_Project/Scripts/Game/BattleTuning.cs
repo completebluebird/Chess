@@ -8,7 +8,7 @@ namespace ChessBoss.Game
     {
         [Header("Board")]
         public int boardSectors;
-        public int boardRings;
+        [Min(4)] public int boardRings;
         public float boardInnerRadius;
         public float cellSize;
         public float tileThickness;
@@ -89,7 +89,7 @@ namespace ChessBoss.Game
         public int awakenBaseDamage;
         public int awakenDamagePerRing;
         public float awakenCooldownPerRing;
-        public int rookRingHitDamage;
+        public float rookRingHitDamage;
         public float bishopInputBuffer;
         public int knightDamage;
         public int knightAttackRadius;

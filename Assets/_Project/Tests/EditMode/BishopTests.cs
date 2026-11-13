@@ -33,7 +33,7 @@ namespace ChessBoss.Tests
                 DamagePerRing = 1,
                 AttackCooldown = BaseCooldown,
                 CooldownPerRing = CooldownPerRing,
-                RookRingHitDamage = 1,
+                RookRingHitDamage = 0.5f,
                 LandingInvulnerable = 0.5f,
             });
             _awakening.Tick(20, 20);
@@ -201,6 +201,17 @@ namespace ChessBoss.Tests
             input.Press(PawnMove.Right);
 
             Assert.IsNull(input.Press(PawnMove.Left));
+        }
+
+        [Test]
+        public void Clear_ForgetsAKeyWaitingForItsPartner()
+        {
+            var input = new BishopInput(Buffer);
+
+            input.Press(PawnMove.Forward);
+            input.Clear();
+
+            Assert.IsNull(input.Press(PawnMove.Right));
         }
     }
 }

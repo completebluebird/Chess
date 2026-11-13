@@ -60,6 +60,7 @@ namespace ChessBoss.Game
             _actions = new PawnActions(_movement, _combat, tuning.moveCooldown, tuning.attackCooldown);
             _bishopInput = new BishopInput(tuning.bishopInputBuffer);
             Awakening = new Awakening(tuning.awakenChargeTime, tuning.awakenInputWindow);
+            Awakening.Ended += _bishopInput.Clear;
             AwakenedAttacks = new AwakenedAttacks(_movement, _boss.Health, Vitals, _actions, Awakening, new AwakenSettings
             {
                 BaseDamage = tuning.awakenBaseDamage,
@@ -95,7 +96,7 @@ namespace ChessBoss.Game
             ShowAwakening();
             _boss.SetHittable(alive && (Awakening.Active == null
                 ? _combat.CanHitBoss
-                : AwakenedAttacks.KnightCandidates.Any(_movement.Board.IsBossCell)));
+                : Awakening.Active != AwakenPiece.Knight || AwakenedAttacks.KnightCandidates.Any(_movement.Board.IsBossCell)));
 
             if (_hop.Running)
                 AnimateHop(_hop.Tick(Time.deltaTime));
@@ -185,6 +186,13 @@ namespace ChessBoss.Game
 
         void StartHop(Vector3[] path, float duration)
         {
+            // A rook W from the ring in front of the boss never leaves its cell, so there is nothing to animate.
+            if (path.Length < 2)
+            {
+                RefreshAttackMarks();
+                return;
+            }
+
             _hopPath = path;
             _hop.Start(duration);
             RefreshAttackMarks();

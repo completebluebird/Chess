@@ -66,7 +66,7 @@ namespace ChessBoss.Core
                 .Where(spot => LeavesCover(new List<Cell> { spot }))
                 .ToArray();
             if (near.Length == 0)
-                throw new InvalidOperationException($"Board has no wall spot leaving cover in reach of {pawn}.");
+                throw new InvalidOperationException($"Board has no wall spot leaving cover in reach of {pawn}. The breath needs at least 4 rings.");
 
             var chosen = new List<Cell> { near[random.Next(near.Length)] };
             for (var i = 1; i < settings.BreathWalls; i++)

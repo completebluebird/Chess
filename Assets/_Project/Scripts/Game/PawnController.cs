@@ -152,7 +152,8 @@ namespace ChessBoss.Game
         {
             _flying = strike;
             _flyingKnight = knight;
-            _sweeping = sweeping;
+            // A boss in the air takes no damage, so the rook's ring sparks would tell a hit that didn't happen.
+            _sweeping = sweeping && strike.Damage > 0;
             _sweptCells = 1;
             // A knight that jumps onto the boss touches it halfway and comes back.
             _contactAt = strike.Path.Count == 3 && strike.Path[0] == strike.Path[2] ? 0.5f : 1;

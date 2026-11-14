@@ -110,3 +110,21 @@ MonoBehaviour:
   knightAttackRadius: 1
   landingInvulnerable: 0.5
   battleResultDelay: 1.5
+  screenEdgeInner: 0.45
+  screenEdgeClearRadius: 0.45
+  screenEdgeRaggedness: 0.5
+  screenEdgeNoiseScale: 9
+  hurtFlashColor: {r: 0.85, g: 0.05, b: 0.05, a: 1}
+  hurtFlashAlpha: 0.75
+  hurtFlashTime: 0.6
+  screenFireColor: {r: 1, g: 0.45, b: 0.1, a: 1}
+  screenFireWeak: 0.35
+  screenFireStrong: 0.8
+  screenFireTime: 0.5
+  screenFireFlicker: 0.5
+  screenFireFlickerSpeed: 12
+  lowHealthColor: {r: 0.7, g: 0, b: 0, a: 1}
+  lowHealthFraction: 0.3
+  lowHealthAlphaMin: 0.25
+  lowHealthAlphaMax: 0.55
+  lowHealthPulsePeriod: 1.2

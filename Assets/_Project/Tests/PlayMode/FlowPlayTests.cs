@@ -119,6 +119,55 @@ namespace ChessBoss.Tests
         }
 
         [UnityTest]
+        public IEnumerator ScreenEffects_RunThroughHitstop_ButStandStillWhilePaused()
+        {
+            var screen = _pawn.Effects.Screen;
+            screen.Flash();
+            BattleTime.Stopped = true;
+            yield return null;
+            var shown = screen.FlashAlpha;
+            Assert.Greater(shown, 0f);
+
+            yield return new WaitForSecondsRealtime(0.1f);
+            Assert.Less(screen.FlashAlpha, shown, "a hitstop doesn't hold the screen");
+            BattleTime.Stopped = false;
+
+            yield return Press(Key.Escape);
+            shown = screen.FlashAlpha;
+            Assert.Greater(shown, 0f);
+            yield return new WaitForSecondsRealtime(0.1f);
+            Assert.AreEqual(shown, screen.FlashAlpha);
+
+            yield return Press(Key.Escape);
+            yield return new WaitForSecondsRealtime(_tuning.hurtFlashTime);
+            Assert.AreEqual(0f, screen.FlashAlpha);
+        }
+
+        [UnityTest]
+        public IEnumerator Retry_LeavesNoScreenEffectBehind()
+        {
+            var screen = _pawn.Effects.Screen;
+            screen.Flash();
+            screen.Fire(_tuning.screenFireStrong);
+            screen.LowHealth = true;
+            yield return null;
+            Assert.Greater(screen.FireAlpha, 0f);
+            Assert.Greater(screen.LowHealthAlpha, 0f);
+            yield return Press(Key.Escape);
+
+            yield return Click("RetryButton");
+            Find();
+            yield return null;
+
+            Assert.AreEqual(1, Object.FindObjectsByType<ScreenEffects>().Length);
+            screen = _pawn.Effects.Screen;
+            Assert.AreEqual(0f, screen.FlashAlpha);
+            Assert.AreEqual(0f, screen.FireAlpha);
+            Assert.AreEqual(0f, screen.LowHealthAlpha);
+            Assert.AreEqual(1f, Time.timeScale);
+        }
+
+        [UnityTest]
         public IEnumerator RetryFromPause_StartsAFreshFight_AtNormalSpeed()
         {
             _boss.Health.TakeDamage(10);

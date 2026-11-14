@@ -119,6 +119,11 @@ MonoBehaviour:
   shakeWeak: 0.25
   shakeStrong: 0.8
   shakeDuration: 0.3
+  awakenZoomIn: 0.6
+  awakenZoomWide: 1.3
+  awakenZoomInTime: 0.25
+  awakenZoomOutTime: 0.35
+  awakenZoomReturnTime: 0.2
   awakenHitstopDuration: 0.1
   slashColor: {r: 1, g: 1, b: 1, a: 1}
   slashTime: 0.15
@@ -143,6 +148,23 @@ MonoBehaviour:
   dustLifetime: 0.5
   burstGravity: 1
   burstMaxParticles: 2000
+  gaugeFullColor: {r: 1, g: 1, b: 1, a: 1}
+  gaugeFullPulsePeriod: 0.8
+  flameColor: {r: 0.02, g: 0.02, b: 0.03, a: 0.9}
+  flameRadius: 0.45
+  flameHeight: 1.8
+  flameLifetime: 0.5
+  flameSize: 0.4
+  flameRate: 130
+  flameRimSize: 0.14
+  flameRimRate: 60
+  rookFlameColor: {r: 0.65, g: 0.3, b: 1, a: 1}
+  bishopFlameColor: {r: 0.25, g: 0.55, b: 1, a: 1}
+  knightFlameColor: {r: 0.3, g: 0.9, b: 0.4, a: 1}
+  pillarHeight: 8
+  pillarWidth: 0.7
+  pillarTime: 0.3
+  pillarAlpha: 0.7
   screenEdgeInner: 0.45
   screenEdgeClearRadius: 0.45
   screenEdgeRaggedness: 0.5

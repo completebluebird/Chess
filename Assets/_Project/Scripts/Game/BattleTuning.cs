@@ -122,6 +122,11 @@ namespace ChessBoss.Game
         public float shakeWeak;
         public float shakeStrong;
         public float shakeDuration;
+        public float awakenZoomIn;
+        public float awakenZoomWide;
+        public float awakenZoomInTime;
+        public float awakenZoomOutTime;
+        public float awakenZoomReturnTime;
 
         [Header("Hit effects")]
         public float awakenHitstopDuration;
@@ -148,6 +153,25 @@ namespace ChessBoss.Game
         public float dustLifetime;
         public float burstGravity;
         public int burstMaxParticles;
+
+        [Header("Awakening effects")]
+        public Color gaugeFullColor;
+        public float gaugeFullPulsePeriod;
+        public Color flameColor;
+        public float flameRadius;
+        public float flameHeight;
+        public float flameLifetime;
+        public float flameSize;
+        public float flameRate;
+        public float flameRimSize;
+        public float flameRimRate;
+        public Color rookFlameColor;
+        public Color bishopFlameColor;
+        public Color knightFlameColor;
+        public float pillarHeight;
+        public float pillarWidth;
+        public float pillarTime;
+        [Range(0, 1)] public float pillarAlpha;
 
         [Header("Screen effects")]
         [Range(0, 1)] public float screenEdgeInner;

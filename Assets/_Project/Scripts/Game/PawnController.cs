@@ -103,6 +103,14 @@ namespace ChessBoss.Game
             else if (alive) ReadPawnInput();
 
             ShowAwakening();
+            // A full gauge makes the pawn pulse. Real time, so a slowed game doesn't slow the signal.
+            if (alive && Awakening.Active == null && Awakening.Gauge >= 1)
+            {
+                var tuning = _board.Tuning;
+                var pulse = Mathf.PingPong(Time.unscaledTime * 2 / tuning.gaugeFullPulsePeriod, 1);
+                _board.Paint(_body, Color.Lerp(tuning.pawnColor, tuning.gaugeFullColor, pulse));
+            }
+
             _boss.SetHittable(alive && !_boss.Health.Untouchable && (Awakening.Active == null
                 ? _combat.CanHitBoss
                 : Awakening.Active != AwakenPiece.Knight || AwakenedAttacks.KnightCandidates.Any(_movement.Board.IsBossCell)));

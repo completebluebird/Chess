@@ -23,6 +23,7 @@ namespace ChessBoss.Game
 
         public ScreenEffects Screen { get; private set; }
         public CameraEffects Camera { get; private set; }
+        public PawnEffects Pawn { get; private set; }
         public bool SlashShown => _slash.enabled;
         public bool LanceShown => _lance.emitting;
         public int LiveParticles => _bursts.particleCount;
@@ -39,6 +40,8 @@ namespace ChessBoss.Game
             Screen.Init(_tuning);
             Camera = FindAnyObjectByType<CinemachineCamera>().gameObject.AddComponent<CameraEffects>();
             Camera.Init(board, pawn, boss);
+            Pawn = pawn.gameObject.AddComponent<PawnEffects>();
+            Pawn.Init(board, pawn, this);
 
             _bursts = BuildBursts();
             _slash = new GameObject("Slash").AddComponent<LineRenderer>();

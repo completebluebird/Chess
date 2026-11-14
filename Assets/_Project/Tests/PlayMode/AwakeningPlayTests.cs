@@ -221,6 +221,115 @@ namespace ChessBoss.Tests
         }
 
         [UnityTest]
+        public IEnumerator Awakening_LightsTheFlameAndPillar_InThePiecesColor_AndACancelPutsTheFlameOut()
+        {
+            var effects = _pawn.Effects.Pawn;
+            string cue = null;
+            _pawn.Effects.SoundCued += name => cue = name;
+            Assert.IsFalse(effects.FlameShown);
+            FillGauge();
+
+            yield return Press(Key.Digit3);
+            yield return new WaitForSecondsRealtime(0.1f);
+            Assert.IsTrue(effects.FlameShown);
+            Assert.Greater(effects.FlameParticles, 0, "the flame runs on real time through the slow motion");
+            Assert.IsTrue(effects.PillarShown);
+            Assert.AreEqual(_tuning.bishopFlameColor, effects.PillarColor);
+            Assert.AreEqual(SoundCues.Awaken, cue);
+
+            yield return new WaitForSecondsRealtime(_tuning.pillarTime);
+            Assert.IsFalse(effects.PillarShown);
+            Assert.IsTrue(effects.FlameShown);
+
+            _pawn.Vitals.Hit(0, false);
+            yield return null;
+            yield return null;
+            Assert.IsFalse(effects.FlameShown);
+            Assert.AreEqual(0, effects.FlameParticles);
+            Assert.AreEqual(1f, Time.timeScale);
+        }
+
+        [UnityTest]
+        public IEnumerator Awakening_UsedForAStrike_LetsTheFlameScatter()
+        {
+            var effects = _pawn.Effects.Pawn;
+            FillGauge();
+            yield return Press(Key.Digit1);
+            yield return new WaitForSecondsRealtime(0.2f);
+
+            yield return Press(Key.W);
+            Assert.IsFalse(effects.FlameShown);
+            Assert.Greater(effects.FlameParticles, 0);
+
+            yield return new WaitForSecondsRealtime(_tuning.flameLifetime + _tuning.awakenHitstopDuration + 0.5f);
+            Assert.AreEqual(0, effects.FlameParticles);
+        }
+
+        [UnityTest]
+        public IEnumerator AwakeningZoom_GoesInThenWide_AndComesBackWhenItEnds()
+        {
+            var camera = _pawn.Effects.Camera;
+            Assert.AreEqual(1f, camera.Zoom);
+            FillGauge();
+
+            yield return Press(Key.Digit2);
+            yield return new WaitForSecondsRealtime(_tuning.awakenZoomInTime * 0.6f);
+            Assert.Less(camera.Zoom, 0.9f);
+
+            yield return new WaitForSecondsRealtime(_tuning.awakenZoomInTime + _tuning.awakenZoomOutTime);
+            Assert.AreEqual(_tuning.awakenZoomWide, camera.Zoom, 0.01f);
+            yield return new WaitForSecondsRealtime(0.3f);
+            Assert.AreEqual(_tuning.awakenZoomWide, camera.Zoom, 0.01f, "it stays wide while the piece waits");
+
+            _pawn.Vitals.Hit(0, false);
+            yield return new WaitForSecondsRealtime(_tuning.awakenZoomReturnTime + 0.1f);
+            Assert.AreEqual(1f, camera.Zoom, 0.01f);
+        }
+
+        [UnityTest]
+        public IEnumerator StrikeEnteredDuringTheZoom_GoesOutAtOnce()
+        {
+            var start = _pawn.Movement.Position;
+            FillGauge();
+            yield return Press(Key.Digit1);
+            Assert.Less(_pawn.Effects.Camera.Zoom, 1f, "the zoom has begun");
+
+            yield return Press(Key.W);
+
+            Assert.IsNull(_pawn.Awakening.Active);
+            Assert.AreEqual(new Cell(start.X, 1), _pawn.Movement.Position);
+            yield return new WaitForSecondsRealtime(_tuning.awakenZoomReturnTime + _tuning.awakenTravelTime + _tuning.awakenHitstopDuration + 0.2f);
+            Assert.AreEqual(1f, _pawn.Effects.Camera.Zoom, 0.01f);
+        }
+
+        [UnityTest]
+        public IEnumerator FullGauge_MakesThePawnPulse_UntilItAwakens()
+        {
+            var block = new MaterialPropertyBlock();
+            Color Shown()
+            {
+                _pawn.Body.GetPropertyBlock(block);
+                return block.GetColor("_BaseColor");
+            }
+
+            yield return null;
+            Assert.Less(Vector4.Distance(_tuning.pawnColor, Shown()), 0.01f);
+            FillGauge();
+
+            var brightest = 0f;
+            for (var until = Time.realtimeSinceStartup + _tuning.gaugeFullPulsePeriod; Time.realtimeSinceStartup < until;)
+            {
+                yield return null;
+                brightest = Mathf.Max(brightest, Shown().g - _tuning.pawnColor.g);
+            }
+
+            Assert.Greater(brightest, 0.2f);
+
+            yield return Press(Key.Digit1);
+            Assert.Less(Vector4.Distance(_tuning.awakenedColor, Shown()), 0.01f);
+        }
+
+        [UnityTest]
         public IEnumerator AwakenedHit_ShowsWhenThePieceArrives_WithALongerHitstop()
         {
             FillGauge();

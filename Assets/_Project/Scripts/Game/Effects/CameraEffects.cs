@@ -17,6 +17,12 @@ namespace ChessBoss.Game
         CinemachineFollow _follow;
         CinemachineImpulseSource _impulse;
         CinemachineImpulseListener _listener;
+        bool _awakened;
+        float _zoomFrom = 1;
+        float _zoomClock;
+
+        /// <summary>The camera's distance from the pawn as a multiple of its usual one.</summary>
+        public float Zoom { get; private set; } = 1;
 
         public void Init(BoardView board, PawnController pawn, BossView boss)
         {
@@ -58,7 +64,32 @@ namespace ChessBoss.Game
             _listener.Gain = BattleTime.IsPaused ? 0 : 1;
             if (BattleTime.IsPaused) return;
 
+            ZoomForAwakening();
             FadeOccluders();
+        }
+
+        // In fast on the awakening, out to wider than usual while it waits, and back when it ends however it ends.
+        // Nothing here touches input, so a strike entered mid-zoom goes out and the zoom turns back from where it is.
+        void ZoomForAwakening()
+        {
+            var tuning = _board.Tuning;
+            var awakened = _pawn.Awakening.Active != null;
+            if (awakened != _awakened)
+            {
+                _awakened = awakened;
+                _zoomFrom = Zoom;
+                _zoomClock = 0;
+            }
+
+            _zoomClock += Time.unscaledDeltaTime;
+            if (!_awakened)
+                Zoom = Mathf.SmoothStep(_zoomFrom, 1, _zoomClock / tuning.awakenZoomReturnTime);
+            else if (_zoomClock < tuning.awakenZoomInTime)
+                Zoom = Mathf.SmoothStep(_zoomFrom, tuning.awakenZoomIn, _zoomClock / tuning.awakenZoomInTime);
+            else
+                Zoom = Mathf.SmoothStep(tuning.awakenZoomIn, tuning.awakenZoomWide, (_zoomClock - tuning.awakenZoomInTime) / tuning.awakenZoomOutTime);
+
+            _follow.FollowOffset = tuning.cameraOffset * Zoom;
         }
 
         // Walls and the boss have no colliders, so the line from the camera to the pawn is tested against their bounds.

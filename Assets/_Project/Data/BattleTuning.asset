@@ -124,6 +124,8 @@ MonoBehaviour:
   awakenZoomInTime: 0.25
   awakenZoomOutTime: 0.35
   awakenZoomReturnTime: 0.2
+  hurtTiltDegrees: 4
+  hurtTiltReturnTime: 0.25
   awakenHitstopDuration: 0.1
   slashColor: {r: 1, g: 1, b: 1, a: 1}
   slashTime: 0.15
@@ -146,6 +148,15 @@ MonoBehaviour:
   dustSpeed: 3.5
   dustSize: 0.22
   dustLifetime: 0.5
+  impactFireColor: {r: 1, g: 0.5, b: 0.1, a: 1}
+  impactFireCount: 3
+  impactFireSpeed: 3
+  impactFireSize: 0.22
+  impactFireLifetime: 0.45
+  impactDustCount: 4
+  staggerDegrees: 25
+  staggerTime: 0.35
+  staggerSwings: 2
   burstGravity: 1
   burstMaxParticles: 2000
   gaugeFullColor: {r: 1, g: 1, b: 1, a: 1}

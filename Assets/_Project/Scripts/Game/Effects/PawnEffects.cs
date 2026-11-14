@@ -19,11 +19,14 @@ namespace ChessBoss.Game
         AwakenPiece? _shown;
         AwakenedStrike _lastStrike;
         bool _paused;
+        Vector3 _staggerAxis;
+        float _staggerLeft;
 
         public bool FlameShown => _flame.emission.enabled;
         public int FlameParticles => _flame.particleCount + _rim.particleCount;
         public bool PillarShown => _pillar.gameObject.activeSelf;
         public Color PillarColor { get; private set; }
+        public bool Staggering => _staggerLeft > 0;
 
         public void Init(BoardView board, PawnController pawn, BattleEffects effects)
         {
@@ -46,6 +49,14 @@ namespace ChessBoss.Game
             pillar.SetActive(false);
         }
 
+        /// <summary>Rocks the piece on its base and lets it settle, when a hit lands on it.</summary>
+        public void Stagger()
+        {
+            var away = Random.insideUnitCircle.normalized;
+            _staggerAxis = new Vector3(away.x, 0, away.y);
+            _staggerLeft = _board.Tuning.staggerTime;
+        }
+
         void Update()
         {
             // The flame and the pillar run on real time, which a pause doesn't stop by itself.
@@ -61,6 +72,18 @@ namespace ChessBoss.Game
 
             ShowAwakening();
             ShowPillar();
+            ShowStagger();
+        }
+
+        void ShowStagger()
+        {
+            if (!Staggering) return;
+
+            var tuning = _board.Tuning;
+            _staggerLeft = Mathf.Max(0, _staggerLeft - Time.deltaTime);
+            var left = _staggerLeft / tuning.staggerTime;
+            var lean = tuning.staggerDegrees * left * Mathf.Sin(left * tuning.staggerSwings * 2 * Mathf.PI);
+            _pawn.Body.transform.localRotation = Quaternion.AngleAxis(lean, _staggerAxis);
         }
 
         void ShowAwakening()

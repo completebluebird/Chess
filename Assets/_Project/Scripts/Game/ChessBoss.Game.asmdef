@@ -4,6 +4,7 @@
     "references": [
         "ChessBoss.Core",
         "Unity.InputSystem",
+        "Unity.Cinemachine",
         "UnityEngine.UI"
     ],
     "includePlatforms": [],

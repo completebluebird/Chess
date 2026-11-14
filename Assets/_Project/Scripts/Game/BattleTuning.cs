@@ -14,6 +14,7 @@ namespace ChessBoss.Game
         public float tileThickness;
         public float tileScale;
         public Material prototypeMaterial;
+        public Material fadeMaterial;
         public Color tileLight;
         public Color tileDark;
         public Color attackableColor;
@@ -111,6 +112,15 @@ namespace ChessBoss.Game
 
         [Header("Flow")]
         public float battleResultDelay;
+
+        [Header("Camera")]
+        public Vector3 cameraOffset;
+        public float cameraFieldOfView;
+        [Range(0, 1)] public float occluderAlpha;
+        public float occluderFadeTime;
+        public float shakeWeak;
+        public float shakeStrong;
+        public float shakeDuration;
 
         [Header("Screen effects")]
         [Range(0, 1)] public float screenEdgeInner;

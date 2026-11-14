@@ -15,6 +15,7 @@ namespace ChessBoss.Game
         public float tileScale;
         public Material prototypeMaterial;
         public Material fadeMaterial;
+        public Material particleMaterial;
         public Color tileLight;
         public Color tileDark;
         public Color attackableColor;
@@ -121,6 +122,32 @@ namespace ChessBoss.Game
         public float shakeWeak;
         public float shakeStrong;
         public float shakeDuration;
+
+        [Header("Hit effects")]
+        public float awakenHitstopDuration;
+        public Color slashColor;
+        public float slashTime;
+        public float slashWidth;
+        public float slashMissWidth;
+        [Range(0, 1)] public float slashMissReach;
+        public float slashBulge;
+        public float slashLift;
+        public float lanceTime;
+        public float lanceWidth;
+        public Color sparkColor;
+        public int sparkCount;
+        public int awakenSparkCount;
+        public int ringSparkCount;
+        public float sparkSpeed;
+        public float sparkSize;
+        public float sparkLifetime;
+        public Color dustColor;
+        public int dustCount;
+        public float dustSpeed;
+        public float dustSize;
+        public float dustLifetime;
+        public float burstGravity;
+        public int burstMaxParticles;
 
         [Header("Screen effects")]
         [Range(0, 1)] public float screenEdgeInner;

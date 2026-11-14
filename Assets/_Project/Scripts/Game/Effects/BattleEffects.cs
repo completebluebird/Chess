@@ -7,23 +7,151 @@ namespace ChessBoss.Game
     /// <summary>
     /// Where the fight's one-off effects start. One lives in each Battle scene, added at run time so the scene file
     /// doesn't change, and it is not static so a reloaded scene can't keep hold of destroyed objects.
+    /// Particles and streaks run on game time, so a hitstop freezes them with the hit.
     /// </summary>
     public sealed class BattleEffects : MonoBehaviour
     {
+        const int SlashPoints = 8;
+
+        BattleTuning _tuning;
+        PawnController _pawn;
+        Vector3 _center;
+        ParticleSystem _bursts;
+        LineRenderer _slash;
+        TrailRenderer _lance;
+        float _slashLeft;
+
         public ScreenEffects Screen { get; private set; }
         public CameraEffects Camera { get; private set; }
+        public bool SlashShown => _slash.enabled;
+        public bool LanceShown => _lance.emitting;
+        public int LiveParticles => _bursts.particleCount;
 
         /// <summary>A name from SoundCues, each time its moment happens.</summary>
         public event Action<string> SoundCued;
 
         public void Init(BoardView board, PawnController pawn, BossView boss)
         {
+            _tuning = board.Tuning;
+            _pawn = pawn;
+            _center = board.transform.position;
             Screen = new GameObject("ScreenEffects").AddComponent<ScreenEffects>();
-            Screen.Init(board.Tuning);
+            Screen.Init(_tuning);
             Camera = FindAnyObjectByType<CinemachineCamera>().gameObject.AddComponent<CameraEffects>();
             Camera.Init(board, pawn, boss);
+
+            _bursts = BuildBursts();
+            _slash = new GameObject("Slash").AddComponent<LineRenderer>();
+            _slash.sharedMaterial = _tuning.particleMaterial;
+            _slash.positionCount = SlashPoints;
+            _slash.enabled = false;
+
+            _lance = new GameObject("Lance").AddComponent<TrailRenderer>();
+            _lance.transform.SetParent(pawn.Body.transform, false);
+            _lance.sharedMaterial = _tuning.particleMaterial;
+            _lance.time = _tuning.lanceTime;
+            _lance.startWidth = _tuning.lanceWidth;
+            _lance.endWidth = 0;
+            _lance.startColor = _tuning.slashColor;
+            _lance.endColor = Clear(_tuning.slashColor);
+            _lance.emitting = false;
         }
 
         public void Sound(string cue) => SoundCued?.Invoke(cue);
+
+        /// <summary>The pawn's attack: a white arc toward the cell, thin and short when it hits nothing, with sparks on the boss when it does.</summary>
+        public void Slash(Vector3 to, bool hit)
+        {
+            var from = _pawn.Body.bounds.center;
+            to.y = from.y;
+            // Swings out to the attack's own side and over the pawn's head: the camera looks along the pawn's line
+            // to the boss, and a straight streak would hide behind the pawn.
+            var inward = _center - from;
+            inward.y = 0;
+            var bulge = Vector3.ProjectOnPlane(to - from, inward.normalized).normalized * _tuning.slashBulge + Vector3.up * _tuning.slashLift;
+            var reach = hit ? 1 : _tuning.slashMissReach;
+            for (var i = 0; i < SlashPoints; i++)
+            {
+                var along = reach * i / (SlashPoints - 1);
+                _slash.SetPosition(i, Vector3.Lerp(from, to, along) + bulge * Mathf.Sin(along * Mathf.PI));
+            }
+
+            _slash.startWidth = hit ? _tuning.slashWidth : _tuning.slashMissWidth;
+            _slash.endWidth = 0;
+            _slash.enabled = true;
+            _slashLeft = _tuning.slashTime;
+            if (hit) Sparks(to, _tuning.sparkCount);
+            Sound(SoundCues.Slash);
+        }
+
+        /// <summary>The white trail an awakened piece leaves while it flies.</summary>
+        public void ShowLance(bool flying)
+        {
+            if (flying && !_lance.emitting) _lance.Clear();
+            _lance.emitting = flying;
+        }
+
+        public void Sparks(Vector3 at, int count) =>
+            Burst(at, _tuning.sparkColor, count, _tuning.sparkSpeed, _tuning.sparkSize, _tuning.sparkLifetime, false);
+
+        /// <summary>Dust thrown outward along the floor.</summary>
+        public void Dust(Vector3 at) =>
+            Burst(at, _tuning.dustColor, _tuning.dustCount, _tuning.dustSpeed, _tuning.dustSize, _tuning.dustLifetime, true);
+
+        public void Burst(Vector3 at, Color color, int count, float speed, float size, float lifetime, bool alongFloor)
+        {
+            var particle = new ParticleSystem.EmitParams
+            {
+                position = at, startColor = color, startSize = size, startLifetime = lifetime,
+            };
+            for (var i = 0; i < count; i++)
+            {
+                var direction = UnityEngine.Random.onUnitSphere;
+                direction.y = alongFloor ? 0 : Mathf.Abs(direction.y);
+                particle.velocity = direction.normalized * (speed * UnityEngine.Random.Range(0.5f, 1f));
+                _bursts.Emit(particle, 1);
+            }
+        }
+
+        void Update()
+        {
+            if (!_slash.enabled) return;
+
+            _slashLeft -= Time.deltaTime;
+            var color = _tuning.slashColor;
+            color.a *= Mathf.Clamp01(_slashLeft / _tuning.slashTime);
+            _slash.startColor = color;
+            _slash.endColor = color;
+            _slash.enabled = _slashLeft > 0;
+        }
+
+        // One system for every burst: each particle is given its place, color and velocity as it is emitted.
+        ParticleSystem BuildBursts()
+        {
+            var bursts = new GameObject("Bursts").AddComponent<ParticleSystem>();
+            bursts.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = bursts.main;
+            main.loop = true;
+            main.playOnAwake = false;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.gravityModifier = _tuning.burstGravity;
+            main.maxParticles = _tuning.burstMaxParticles;
+            var emission = bursts.emission;
+            emission.enabled = false;
+            var shape = bursts.shape;
+            shape.enabled = false;
+            var fade = bursts.colorOverLifetime;
+            fade.enabled = true;
+            fade.color = new ParticleSystem.MinMaxGradient(Color.white, Clear(Color.white));
+            bursts.GetComponent<ParticleSystemRenderer>().sharedMaterial = _tuning.particleMaterial;
+            bursts.Play();
+            return bursts;
+        }
+
+        static Color Clear(Color color)
+        {
+            color.a = 0;
+            return color;
+        }
     }
 }

@@ -66,7 +66,6 @@ namespace ChessBoss.Game
         {
             var tuning = _board.Tuning;
             var toPawn = _pawn.Body.bounds.center - _view.position;
-            var line = new Ray(_view.position, toPawn);
             var step = (1 - tuning.occluderAlpha) * Time.unscaledDeltaTime / tuning.occluderFadeTime;
 
             foreach (var wall in _board.Walls) Fade(wall);
@@ -75,7 +74,12 @@ namespace ChessBoss.Game
 
             void Fade(Renderer occluder)
             {
-                var hides = occluder.bounds.IntersectRay(line, out var distance) && distance < toPawn.magnitude;
+                // In the occluder's own space, where its box is exact. Its world bounds swell as it turns and would
+                // swallow a pawn standing next to the boss.
+                var space = occluder.transform;
+                var reach = space.InverseTransformVector(toPawn);
+                var line = new Ray(space.InverseTransformPoint(_view.position), reach);
+                var hides = occluder.localBounds.IntersectRay(line, out var distance) && distance < reach.magnitude;
                 var alpha = _board.AlphaOf(occluder);
                 var target = hides ? tuning.occluderAlpha : 1;
                 if (alpha != target) _board.SetAlpha(occluder, Mathf.MoveTowards(alpha, target, step));

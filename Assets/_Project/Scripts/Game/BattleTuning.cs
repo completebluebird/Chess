@@ -184,6 +184,14 @@ namespace ChessBoss.Game
         public float pillarTime;
         [Range(0, 1)] public float pillarAlpha;
 
+        [Header("Burn")]
+        public Color emberColor;
+        public float emberRadius;
+        public float emberHeight;
+        public float emberLifetime;
+        public float emberSize;
+        public float emberRate;
+
         [Header("Screen effects")]
         [Range(0, 1)] public float screenEdgeInner;
         public float screenEdgeClearRadius;

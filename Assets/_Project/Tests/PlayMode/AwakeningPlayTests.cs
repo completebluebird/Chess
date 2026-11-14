@@ -441,6 +441,44 @@ namespace ChessBoss.Tests
         }
 
         [UnityTest]
+        public IEnumerator Burning_ShowsEmbersAtThePawnsFeet_OnlyWhileItLasts()
+        {
+            var effects = _pawn.Effects.Pawn;
+            yield return null;
+            Assert.IsFalse(effects.EmbersShown);
+
+            _pawn.Vitals.Hit(0, true);
+            yield return null;
+            yield return null;
+            Assert.IsTrue(effects.EmbersShown);
+            Assert.IsFalse(effects.FlameShown, "the burn is not the awakening's flame");
+
+            _pawn.Vitals.Tick(_tuning.burnDuration);
+            Assert.IsFalse(_pawn.Vitals.IsBurning);
+            yield return null;
+            yield return null;
+            Assert.IsFalse(effects.EmbersShown);
+        }
+
+        [UnityTest]
+        public IEnumerator LowHealth_ReddensTheScreenEdge_FromTheThresholdDown()
+        {
+            var health = _pawn.Vitals.Health;
+            var threshold = Mathf.RoundToInt(_tuning.lowHealthFraction * health.Max);
+            var screen = _pawn.Effects.Screen;
+
+            health.TakeDamage(health.Max - threshold - 1);
+            yield return null;
+            yield return null;
+            Assert.AreEqual(0f, screen.LowHealthAlpha);
+
+            health.TakeDamage(1);
+            yield return null;
+            yield return null;
+            Assert.GreaterOrEqual(screen.LowHealthAlpha, _tuning.lowHealthAlphaMin);
+        }
+
+        [UnityTest]
         public IEnumerator Camera_FramesFromTheTuning_AndShakesHarderForAStrongHit()
         {
             var view = Camera.main.transform;

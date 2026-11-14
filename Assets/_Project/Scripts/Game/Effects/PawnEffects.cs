@@ -14,6 +14,7 @@ namespace ChessBoss.Game
         BattleEffects _effects;
         ParticleSystem _flame;
         ParticleSystem _rim;
+        ParticleSystem _embers;
         Renderer _pillar;
         float _pillarLeft;
         AwakenPiece? _shown;
@@ -25,6 +26,7 @@ namespace ChessBoss.Game
         public bool FlameShown => _flame.emission.enabled;
         public int FlameParticles => _flame.particleCount + _rim.particleCount;
         public bool PillarShown => _pillar.gameObject.activeSelf;
+        public bool EmbersShown => _embers.emission.enabled;
         public Color PillarColor { get; private set; }
         public bool Staggering => _staggerLeft > 0;
 
@@ -36,8 +38,10 @@ namespace ChessBoss.Game
             var tuning = board.Tuning;
 
             // The black flame and its colored rim rise around the piece on real time, so the awakening's slow motion doesn't slow them.
-            _flame = BuildRising("Awakening flame", tuning.flameColor, tuning.flameRadius, tuning.flameSize, tuning.flameHeight, tuning.flameLifetime, tuning.flameRate);
-            _rim = BuildRising("Awakening flame rim", Color.white, tuning.flameRadius + tuning.flameSize / 2, tuning.flameRimSize, tuning.flameHeight, tuning.flameLifetime, tuning.flameRimRate);
+            _flame = BuildRising("Awakening flame", tuning.flameColor, tuning.flameRadius, tuning.flameSize, tuning.flameHeight, tuning.flameLifetime, tuning.flameRate, true);
+            _rim = BuildRising("Awakening flame rim", Color.white, tuning.flameRadius + tuning.flameSize / 2, tuning.flameRimSize, tuning.flameHeight, tuning.flameLifetime, tuning.flameRimRate, true);
+            // Small, orange and low at the feet, on game time like the burn itself: nothing like the awakening's tall black flame.
+            _embers = BuildRising("Burn embers", tuning.emberColor, tuning.emberRadius, tuning.emberSize, tuning.emberHeight, tuning.emberLifetime, tuning.emberRate, false);
 
             var pillar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             pillar.name = "Awakening pillar";
@@ -73,6 +77,11 @@ namespace ChessBoss.Game
             ShowAwakening();
             ShowPillar();
             ShowStagger();
+
+            var vitals = _pawn.Vitals;
+            if (EmbersShown != vitals.IsBurning) SetEmitting(_embers, vitals.IsBurning);
+            // Rounded as Core rounds its health thresholds: 0.3f * 50 need not come out at exactly 15.
+            _effects.Screen.LowHealth = vitals.Health.Current <= Mathf.Round(_board.Tuning.lowHealthFraction * vitals.Health.Max);
         }
 
         void ShowStagger()
@@ -140,7 +149,7 @@ namespace ChessBoss.Game
         }
 
         // Particles born on a circle around the pawn's feet that rise to the height over their lifetime, shrinking and fading.
-        ParticleSystem BuildRising(string systemName, Color color, float radius, float size, float height, float lifetime, float rate)
+        ParticleSystem BuildRising(string systemName, Color color, float radius, float size, float height, float lifetime, float rate, bool realTime)
         {
             var system = new GameObject(systemName).AddComponent<ParticleSystem>();
             system.transform.SetParent(transform, false);
@@ -148,7 +157,7 @@ namespace ChessBoss.Game
             var main = system.main;
             main.playOnAwake = false;
             main.loop = true;
-            main.useUnscaledTime = true;
+            main.useUnscaledTime = realTime;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.startLifetime = lifetime;
             main.startSpeed = height / lifetime;

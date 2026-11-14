@@ -26,6 +26,18 @@ namespace ChessBoss.Core
         public static BreathPlan Breath(Board board, Cell pawn, Random random, BossAttackSettings settings)
         {
             var walls = BreathWalls(board, pawn, random, settings);
+            return new BreathPlan(walls, Sweep(board, walls, random, settings.BreathPrep, settings.BreathStepTime, settings));
+        }
+
+        /// <summary>
+        /// The same beam with no walls, turning slower than the pawn hops: the player stays ahead of it or
+        /// crosses it between two strikes.
+        /// </summary>
+        public static AttackStep[] SlowBreath(Board board, Random random, BossAttackSettings settings) =>
+            Sweep(board, new Cell[0], random, settings.SlowBreathPrep, settings.SlowBreathStepTime, settings);
+
+        static AttackStep[] Sweep(Board board, IReadOnlyList<Cell> walls, Random random, float prep, float stepTime, BossAttackSettings settings)
+        {
             var start = new Cell(random.Next(board.Sectors), 0);
             var direction = random.Next(2) == 0 ? 1 : -1;
 
@@ -41,11 +53,11 @@ namespace ChessBoss.Core
                     .Where(cell => board.IsWalkable(cell) && beam.Contains(cell.X)
                         && !walls.Any(wall => wall.X == cell.X && wall.Y <= cell.Y))
                     .ToArray();
-                var strike = settings.BreathPrep + i * settings.BreathStepTime;
+                var strike = prep + i * stepTime;
                 steps[i] = new AttackStep(cells, strike - settings.BreathWarning, strike, beam[0]);
             }
 
-            return new BreathPlan(walls, steps);
+            return steps;
         }
 
         static List<Cell> BreathWalls(Board board, Cell pawn, Random random, BossAttackSettings settings)
@@ -103,6 +115,7 @@ namespace ChessBoss.Core
         Meteor,
         Bite,
         Breath,
+        SlowBreath,
     }
 
     public enum BossPhase
@@ -119,6 +132,9 @@ namespace ChessBoss.Core
         public int LaserShotsMin;
         public int LaserShotsMax;
         public float LaserShotGap;
+        public int LaserWeight;
+        public int MeteorWeight;
+        public int SlowBreathWeight;
         public int BiteWeight;
         public float MeteorWarning;
         public int MeteorRadius;
@@ -133,6 +149,8 @@ namespace ChessBoss.Core
         public int BreathBeamWidth;
         public int BreathWalls;
         public int BreathCoverHops;
+        public float SlowBreathPrep;
+        public float SlowBreathStepTime;
         public int LaserDamage;
         public int MeteorDamage;
         public int BiteDamage;
@@ -290,6 +308,9 @@ namespace ChessBoss.Core
                         BossPatterns.Meteor(board, MeteorCenters(), _settings.MeteorRadius, _settings.MeteorWarning),
                     });
                     break;
+                case BossAttackKind.SlowBreath:
+                    Timeline.Start(BossPatterns.SlowBreath(board, _random, _settings));
+                    break;
                 default:
                     Timeline.Start(new[]
                     {
@@ -299,10 +320,13 @@ namespace ChessBoss.Core
             }
         }
 
-        // Near the boss, bite is favored; no attack runs three times in a row, and breath comes from the health thresholds.
+        // Near the boss, bite is favored; no attack runs three times in a row, and the walled breath comes from the health thresholds.
         BossAttackKind PickBasicAttack()
         {
-            var options = new List<BossAttackKind> { BossAttackKind.Laser, BossAttackKind.Meteor };
+            var options = new List<BossAttackKind>();
+            options.AddRange(Enumerable.Repeat(BossAttackKind.Laser, _settings.LaserWeight));
+            options.AddRange(Enumerable.Repeat(BossAttackKind.Meteor, _settings.MeteorWeight));
+            options.AddRange(Enumerable.Repeat(BossAttackKind.SlowBreath, _settings.SlowBreathWeight));
             if (_pawn.Position.Y <= _settings.BiteDepth)
                 options.AddRange(Enumerable.Repeat(BossAttackKind.Bite, _settings.BiteWeight));
             if (_sameBasicAttackInARow >= 2)

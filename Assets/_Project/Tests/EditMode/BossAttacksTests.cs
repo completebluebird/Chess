@@ -73,7 +73,10 @@ namespace ChessBoss.Tests
             LaserShotsMin = 3,
             LaserShotsMax = 4,
             LaserShotGap = 0.4f,
-            BiteWeight = 2,
+            LaserWeight = 3,
+            MeteorWeight = 3,
+            SlowBreathWeight = 2,
+            BiteWeight = 6,
             MeteorWarning = 1.5f,
             MeteorRadius = 2,
             BiteWarning = 0.6f,
@@ -87,6 +90,8 @@ namespace ChessBoss.Tests
             BreathBeamWidth = 2,
             BreathWalls = 2,
             BreathCoverHops = 5,
+            SlowBreathPrep = 1f,
+            SlowBreathStepTime = 8f / 24,
             LaserDamage = 10,
             MeteorDamage = 20,
             BiteDamage = 30,
@@ -128,26 +133,29 @@ namespace ChessBoss.Tests
                 var attacks = Attacks(seed, start, out _, out _);
 
                 attacks.Tick(Settings.Interval);
+                // The slow breath starts at a sector of its own and comes around to the player.
+                if (attacks.CurrentAttack == BossAttackKind.SlowBreath) continue;
 
                 CollectionAssert.Contains(attacks.Timeline.WarningCells, start, $"{start} seed {seed}");
             }
         }
 
         [Test]
-        public void FarFromBoss_OnlyLaserAndMeteorAreUsed()
+        public void FarFromBoss_LaserMeteorAndSlowBreathAreUsed_ButNoBite()
         {
             var kinds = KindsUsedFrom(new Cell(18, Settings.BiteDepth + 1));
 
-            CollectionAssert.AreEquivalent(new[] { BossAttackKind.Laser, BossAttackKind.Meteor }, kinds);
+            CollectionAssert.AreEquivalent(
+                new[] { BossAttackKind.Laser, BossAttackKind.Meteor, BossAttackKind.SlowBreath }, kinds);
         }
 
         [Test]
-        public void NearBoss_AllThreeAttacksAreUsed()
+        public void NearBoss_BiteJoinsThem()
         {
             var kinds = KindsUsedFrom(new Cell(18, Settings.BiteDepth));
 
             CollectionAssert.AreEquivalent(
-                new[] { BossAttackKind.Laser, BossAttackKind.Meteor, BossAttackKind.Bite }, kinds);
+                new[] { BossAttackKind.Laser, BossAttackKind.Meteor, BossAttackKind.SlowBreath, BossAttackKind.Bite }, kinds);
         }
 
         HashSet<BossAttackKind> KindsUsedFrom(Cell start)
@@ -179,7 +187,7 @@ namespace ChessBoss.Tests
         }
 
         [Test]
-        public void StayingInPlace_MeteorHitsOnce_LaserHitsOncePerShot()
+        public void StayingInPlace_MeteorHitsOnce_LaserHitsOncePerShot_SlowBreathOncePerBeamSector()
         {
             var laserHits = new HashSet<int>();
             for (var seed = 0; seed < 100; seed++)
@@ -189,6 +197,9 @@ namespace ChessBoss.Tests
 
                 if (attacks.CurrentAttack == BossAttackKind.Meteor)
                     Assert.AreEqual(1, attacks.PlayerHits, $"seed {seed}");
+                else if (attacks.CurrentAttack == BossAttackKind.SlowBreath)
+                    // The beam's last sector is only struck by its head.
+                    Assert.That(attacks.PlayerHits, Is.InRange(1, Settings.BreathBeamWidth), $"seed {seed}");
                 else
                     laserHits.Add(attacks.PlayerHits);
             }
@@ -220,13 +231,24 @@ namespace ChessBoss.Tests
         {
             for (var seed = 0; seed < 200; seed++)
             {
+                // Walking right can walk into a beam coming the other way; the slow breath has its own dodge tests.
+                var preview = Attacks(seed, out _, out _);
+                preview.Tick(Settings.Interval);
+                if (preview.CurrentAttack == BossAttackKind.SlowBreath) continue;
+
                 var attacks = Attacks(seed, out var pawn, out _);
                 var hopReady = 0f;
                 RunFirstAttack(attacks, () =>
                 {
                     hopReady -= 0.05f;
-                    if (hopReady > 0 || !attacks.Timeline.WarningCells.Contains(pawn.Position)) return;
-                    Assert.IsTrue(pawn.TryMove(PawnMove.Right));
+                    var warned = new HashSet<Cell>(attacks.Timeline.WarningCells);
+                    if (hopReady > 0 || !warned.Contains(pawn.Position)) return;
+
+                    // Around the ring, whichever way leaves the warned cells sooner: two meteors side by side are too wide to cross.
+                    var sectors = 1;
+                    while (warned.Contains(_board.Step(pawn.Position, sectors, 0)) && warned.Contains(_board.Step(pawn.Position, -sectors, 0)))
+                        sectors++;
+                    Assert.IsTrue(pawn.TryMove(warned.Contains(_board.Step(pawn.Position, sectors, 0)) ? PawnMove.Left : PawnMove.Right));
                     hopReady = MoveCooldown;
                 });
 
@@ -337,6 +359,7 @@ namespace ChessBoss.Tests
             var counts = new Dictionary<BossAttackKind, int>
             {
                 [BossAttackKind.Laser] = 0, [BossAttackKind.Meteor] = 0, [BossAttackKind.Bite] = 0,
+                [BossAttackKind.SlowBreath] = 0,
             };
             for (var seed = 0; seed < 500; seed++)
             {
@@ -347,6 +370,116 @@ namespace ChessBoss.Tests
 
             Assert.Greater(counts[BossAttackKind.Bite], counts[BossAttackKind.Laser]);
             Assert.Greater(counts[BossAttackKind.Bite], counts[BossAttackKind.Meteor]);
+        }
+
+        [Test]
+        public void SlowBreath_IsPickedLessOftenThanMeteor()
+        {
+            var counts = new Dictionary<BossAttackKind, int>
+            {
+                [BossAttackKind.Laser] = 0, [BossAttackKind.Meteor] = 0, [BossAttackKind.SlowBreath] = 0,
+            };
+            for (var seed = 0; seed < 2000; seed++)
+            {
+                var attacks = Attacks(seed, out _, out _);
+                attacks.Tick(Settings.Interval);
+                counts[attacks.CurrentAttack]++;
+            }
+
+            Assert.Greater(counts[BossAttackKind.SlowBreath], 0);
+            Assert.Less(counts[BossAttackKind.SlowBreath], counts[BossAttackKind.Meteor]);
+        }
+
+        [Test]
+        public void SlowBreath_SweepsOneFullCircle_SlowerThanThePawnMoves_AndSheltersNothing()
+        {
+            var steps = BossPatterns.SlowBreath(_board, new Random(1), Settings);
+
+            Assert.AreEqual(_board.Sectors, steps.Length);
+            CollectionAssert.AreEquivalent(_board.Cells.Where(_board.IsWalkable), steps.SelectMany(step => step.Cells).Distinct());
+            Assert.AreEqual(Settings.SlowBreathPrep, steps[0].StrikeTime, 1e-4f);
+            for (var i = 0; i < steps.Length; i++)
+            {
+                Assert.AreEqual(Settings.BreathWarning, steps[i].StrikeTime - steps[i].WarningStart, 1e-4f);
+                Assert.LessOrEqual(steps[i].Cells.Select(cell => cell.X).Distinct().Count(), Settings.BreathBeamWidth);
+                if (i > 0)
+                    Assert.Greater(steps[i].StrikeTime - steps[i - 1].StrikeTime, MoveCooldown, "the beam must turn slower than the pawn hops");
+            }
+        }
+
+        [Test]
+        public void SlowBreath_IsABasicAttack_WithNoWallsAndNoStun()
+        {
+            var attacks = AttacksStartingWith(BossAttackKind.SlowBreath, out _);
+
+            while (attacks.Timeline.IsRunning)
+            {
+                Assert.AreEqual(BossPhase.Pressing, attacks.Phase);
+                Assert.AreEqual(0, _board.Walls.Count);
+                attacks.Tick(0.05f);
+            }
+
+            attacks.Tick(0.05f);
+            Assert.AreEqual(BossPhase.Pressing, attacks.Phase);
+        }
+
+        // Plays one slow breath over a pawn that starts the given sectors ahead of the beam's first sector, and returns
+        // how many strikes landed on it. The callback says which way to hop; hops are one move cooldown apart.
+        int SlowBreathHits(int seed, int sectorsAhead, Func<AttackTimeline, Cell, int, int, int> hopSectors)
+        {
+            var steps = BossPatterns.SlowBreath(_board, new Random(seed), Settings);
+            var way = _board.Step(new Cell(steps[0].AimSector, 1), 1, 0).X == steps[1].AimSector ? 1 : -1;
+            var pawn = _board.Step(new Cell(steps[0].AimSector, 3), way * sectorsAhead, 0);
+            var timeline = new AttackTimeline();
+            var hits = 0;
+            var strikes = 0;
+            timeline.Struck += cells =>
+            {
+                strikes++;
+                if (cells.Contains(pawn)) hits++;
+            };
+            timeline.Start(steps);
+
+            var hopReady = 0f;
+            while (timeline.IsRunning)
+            {
+                hopReady -= 0.01f;
+                var hop = hopReady <= 0 ? hopSectors(timeline, pawn, way, strikes) : 0;
+                if (hop != 0)
+                {
+                    pawn = _board.Step(pawn, hop, 0);
+                    hopReady = MoveCooldown;
+                }
+
+                timeline.Tick(0.01f);
+            }
+
+            return hits;
+        }
+
+        [Test]
+        public void SlowBreath_IsOutrun_ByWalkingAheadOfTheBeam()
+        {
+            for (var seed = 0; seed < 50; seed++)
+            for (var ahead = 0; ahead < _board.Sectors; ahead += 5)
+                Assert.AreEqual(0, SlowBreathHits(seed, ahead,
+                    (timeline, pawn, way, strikes) => timeline.WarningCells.Contains(pawn) ? way : 0), $"seed {seed}, {ahead} ahead");
+        }
+
+        [Test]
+        public void SlowBreath_CanBeCrossed_BetweenTwoStrikes()
+        {
+            // From 5 sectors ahead, the beam's fifth strike lands on the sector next to the pawn. Two hops against
+            // the beam then reach a sector it has finished with, before the next strike.
+            for (var seed = 0; seed < 50; seed++)
+                Assert.AreEqual(0, SlowBreathHits(seed, 5,
+                    (timeline, pawn, way, strikes) => strikes >= 5 && timeline.WarningCells.Contains(pawn) ? -way : 0), $"seed {seed}");
+        }
+
+        [Test]
+        public void SlowBreath_StandingStill_IsHit()
+        {
+            Assert.Greater(SlowBreathHits(1, 5, (timeline, pawn, way, strikes) => 0), 0);
         }
 
         [Test]
@@ -452,6 +585,7 @@ namespace ChessBoss.Tests
         [TestCase(BossAttackKind.Laser, 10, true)]
         [TestCase(BossAttackKind.Meteor, 20, true)]
         [TestCase(BossAttackKind.Bite, 30, false)]
+        [TestCase(BossAttackKind.SlowBreath, 10, true)]
         public void Strike_DealsItsDamage_AndOnlyFireBurns(BossAttackKind kind, int damage, bool burns)
         {
             var attacks = AttacksStartingWith(kind, out _);

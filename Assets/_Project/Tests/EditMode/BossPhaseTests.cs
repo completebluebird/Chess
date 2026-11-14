@@ -18,7 +18,10 @@ namespace ChessBoss.Tests
             LaserShotsMin = 3,
             LaserShotsMax = 4,
             LaserShotGap = 0.4f,
-            BiteWeight = 2,
+            LaserWeight = 3,
+            MeteorWeight = 3,
+            SlowBreathWeight = 2,
+            BiteWeight = 6,
             MeteorWarning = 1.5f,
             MeteorRadius = 2,
             BiteWarning = 0.6f,
@@ -32,6 +35,8 @@ namespace ChessBoss.Tests
             BreathBeamWidth = 2,
             BreathWalls = 2,
             BreathCoverHops = 5,
+            SlowBreathPrep = 1f,
+            SlowBreathStepTime = 8f / 24,
         };
 
         Board _board;

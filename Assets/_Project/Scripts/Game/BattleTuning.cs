@@ -192,6 +192,15 @@ namespace ChessBoss.Game
         public float emberSize;
         public float emberRate;
 
+        [Header("Breath haze")]
+        public Material hazeMaterial;
+        public float hazeMaxOffset;
+        public float hazeScale;
+        public float hazeSpeed;
+        [Range(0, 1)] public float hazeInner;
+        public float hazeReachSectors;
+        public float hazeFadeTime;
+
         [Header("Screen effects")]
         [Range(0, 1)] public float screenEdgeInner;
         public float screenEdgeClearRadius;

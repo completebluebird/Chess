@@ -182,6 +182,13 @@ MonoBehaviour:
   emberLifetime: 0.6
   emberSize: 0.1
   emberRate: 18
+  hazeMaterial: {fileID: 2100000, guid: 84cd20e08a2e1ad4cac67bcaf01e86d9, type: 2}
+  hazeMaxOffset: 0.006
+  hazeScale: 45
+  hazeSpeed: 6
+  hazeInner: 0.3
+  hazeReachSectors: 6
+  hazeFadeTime: 0.3
   screenEdgeInner: 0.45
   screenEdgeClearRadius: 0.45
   screenEdgeRaggedness: 0.5

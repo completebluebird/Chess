@@ -27,6 +27,7 @@ namespace ChessBoss.Game
         public ScreenEffects Screen { get; private set; }
         public CameraEffects Camera { get; private set; }
         public PawnEffects Pawn { get; private set; }
+        public HeatHaze Haze { get; private set; }
         public bool SlashShown => _slash.enabled;
         public bool LanceShown => _lance.emitting;
         public int LiveParticles => _bursts.particleCount;
@@ -46,6 +47,8 @@ namespace ChessBoss.Game
             Camera.Init(board, pawn, boss);
             Pawn = pawn.gameObject.AddComponent<PawnEffects>();
             Pawn.Init(board, pawn, this);
+            Haze = gameObject.AddComponent<HeatHaze>();
+            Haze.Init(board, pawn, boss.GetComponent<BossAttackView>());
 
             _bursts = BuildBursts();
             _slash = new GameObject("Slash").AddComponent<LineRenderer>();

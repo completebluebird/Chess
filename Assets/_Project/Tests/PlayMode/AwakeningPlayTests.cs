@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using ChessBoss.Core;
 using ChessBoss.Game;
 using NUnit.Framework;
@@ -217,6 +218,68 @@ namespace ChessBoss.Tests
             yield return null;
             Assert.IsFalse(_boss.Health.Untouchable);
             Assert.AreEqual(ground, body.position.y, 1e-3f);
+        }
+
+        [UnityTest]
+        public IEnumerator Camera_FramesFromTheTuning_AndShakesHarderForAStrongHit()
+        {
+            var view = Camera.main.transform;
+            yield return new WaitForSecondsRealtime(1f);
+            Assert.AreEqual(_tuning.cameraFieldOfView, Camera.main.fieldOfView, 0.01f);
+            Assert.AreEqual(_tuning.cameraOffset.magnitude, Vector3.Distance(view.position, _board.CellToWorld(_pawn.Movement.Position)), 0.2f);
+
+            IEnumerator Travel(System.Action<float> report)
+            {
+                var rest = view.position;
+                var farthest = 0f;
+                for (var until = Time.realtimeSinceStartup + _tuning.shakeDuration; Time.realtimeSinceStartup < until;)
+                {
+                    yield return null;
+                    farthest = Mathf.Max(farthest, Vector3.Distance(rest, view.position));
+                }
+
+                report(farthest);
+            }
+
+            var still = 0f;
+            var weak = 0f;
+            var strong = 0f;
+            yield return Travel(travel => still = travel);
+            _pawn.Effects.Camera.ShakeWeak();
+            yield return Travel(travel => weak = travel);
+            yield return new WaitForSecondsRealtime(_tuning.shakeDuration);
+            _pawn.Effects.Camera.ShakeStrong();
+            yield return Travel(travel => strong = travel);
+
+            Assert.Less(still, 0.005f);
+            Assert.Greater(weak, still + 0.01f);
+            Assert.Greater(strong, weak * 1.5f);
+        }
+
+        [UnityTest]
+        public IEnumerator Wall_BetweenTheCameraAndThePawn_FadesAndComesBack()
+        {
+            _boss.Health.TakeDamage(_tuning.bossHealth - (int)(_tuning.bossHealth * _tuning.stunHealthFractions[0]));
+            yield return null;
+            yield return null;
+            var wallCell = _board.Board.Walls.First();
+            var wall = _board.Walls.First();
+            Assert.AreEqual(1f, _board.AlphaOf(wall));
+
+            // In front of the wall, so the camera behind the pawn looks through it.
+            var inFront = new Cell(wallCell.X, wallCell.Y - 1);
+            _pawn.Movement.Land(inFront);
+            _pawn.transform.position = _board.CellToWorld(inFront);
+            yield return new WaitForSecondsRealtime(1.2f);
+            Assert.AreEqual(_tuning.occluderAlpha, _board.AlphaOf(wall), 0.01f);
+            Assert.AreEqual(_tuning.fadeMaterial, wall.sharedMaterial);
+
+            var away = _board.Board.Step(inFront, _board.Board.Sectors / 2, 0);
+            _pawn.Movement.Land(away);
+            _pawn.transform.position = _board.CellToWorld(away);
+            yield return new WaitForSecondsRealtime(1.2f);
+            Assert.AreEqual(1f, _board.AlphaOf(wall));
+            Assert.AreEqual(_tuning.prototypeMaterial, wall.sharedMaterial);
         }
 
         [UnityTest]

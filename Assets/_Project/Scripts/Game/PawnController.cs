@@ -35,6 +35,7 @@ namespace ChessBoss.Game
         public PawnAttackResult? LastAttack { get; private set; }
         public AwakenedStrike LastStrike { get; private set; }
         public BattleEffects Effects { get; private set; }
+        public Renderer Body => _body;
 
         void Awake()
         {
@@ -45,7 +46,7 @@ namespace ChessBoss.Game
             transform.position = _board.CellToWorld(start);
             _board.Paint(_body, tuning.pawnColor);
             Effects = gameObject.AddComponent<BattleEffects>();
-            Effects.Init(_board);
+            Effects.Init(_board, this, _boss);
 
             var actions = InputSystem.actions.FindActionMap("Battle", true);
             actions.Enable();

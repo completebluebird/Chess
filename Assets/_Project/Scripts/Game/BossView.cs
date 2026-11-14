@@ -20,6 +20,8 @@ namespace ChessBoss.Game
         Color RestColor => _stunned ? _board.Tuning.bossStunColor : _board.Tuning.bossColor;
 
         public Health Health => _health ??= new Health(_board.Tuning.bossHealth);
+        public Renderer Body => _body;
+        public Renderer Head { get; private set; }
 
         void Start()
         {
@@ -30,7 +32,8 @@ namespace ChessBoss.Game
             _head = head.transform;
             _head.position = _body.transform.position + Vector3.up * ((tuning.bossHeight + tuning.bossHeadSize.y) / 2);
             _head.localScale = tuning.bossHeadSize;
-            _board.Paint(head.GetComponent<Renderer>(), tuning.bossHeadColor);
+            Head = head.GetComponent<Renderer>();
+            _board.Paint(Head, tuning.bossHeadColor);
         }
 
         /// <summary>Turns the body toward the pawn and, faster, the head toward what the boss is attacking.</summary>

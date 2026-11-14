@@ -13,7 +13,7 @@ namespace ChessBoss.Game
 
         readonly Dictionary<Cell, Renderer> _tiles = new Dictionary<Cell, Renderer>();
         readonly Dictionary<Cell, Color> _shown = new Dictionary<Cell, Color>();
-        readonly Dictionary<Cell, GameObject> _walls = new Dictionary<Cell, GameObject>();
+        readonly Dictionary<Cell, Renderer> _walls = new Dictionary<Cell, Renderer>();
         readonly List<Cell> _removedWalls = new List<Cell>();
         MaterialPropertyBlock _block;
         Board _board;
@@ -22,8 +22,12 @@ namespace ChessBoss.Game
         public BattleTuning Tuning => _tuning;
         public Board Board => _board ??= new Board(_tuning.boardSectors, _tuning.boardRings);
         public CellMarks Marks { get; } = new CellMarks();
+        public IReadOnlyCollection<Renderer> Walls => _walls.Values;
 
         float SectorAngle => 2 * Mathf.PI / Board.Sectors;
+
+        // Unity forbids creating this in a MonoBehaviour field initializer, and other components paint before this one wakes.
+        MaterialPropertyBlock Block => _block ??= new MaterialPropertyBlock();
 
         void Awake()
         {
@@ -54,11 +58,31 @@ namespace ChessBoss.Game
 
         public void Paint(Renderer target, Color color)
         {
-            target.sharedMaterial = _tuning.prototypeMaterial;
-            // Unity forbids creating this in a MonoBehaviour field initializer.
-            _block ??= new MaterialPropertyBlock();
-            _block.SetColor(BaseColor, color);
-            target.SetPropertyBlock(_block);
+            // A faded renderer keeps its material and alpha through repaints, until SetAlpha brings it back.
+            if (target.sharedMaterial == _tuning.fadeMaterial) color.a = AlphaOf(target);
+            else target.sharedMaterial = _tuning.prototypeMaterial;
+
+            Block.SetColor(BaseColor, color);
+            target.SetPropertyBlock(Block);
+        }
+
+        /// <summary>The alpha a painted renderer shows. Only painted renderers have one.</summary>
+        public float AlphaOf(Renderer target)
+        {
+            target.GetPropertyBlock(Block);
+            return Block.GetColor(BaseColor).a;
+        }
+
+        /// <summary>Fades a painted renderer, for what stands between the camera and the pawn.</summary>
+        public void SetAlpha(Renderer target, float alpha)
+        {
+            target.GetPropertyBlock(Block);
+            var color = Block.GetColor(BaseColor);
+            color.a = alpha;
+            // A transparent material asset of its own: a shader keyword switched on at run time can be stripped from a build.
+            target.sharedMaterial = alpha < 1 ? _tuning.fadeMaterial : _tuning.prototypeMaterial;
+            Block.SetColor(BaseColor, color);
+            target.SetPropertyBlock(Block);
         }
 
         public void ShowWalls()
@@ -70,7 +94,7 @@ namespace ChessBoss.Game
 
             foreach (var cell in _removedWalls)
             {
-                Destroy(_walls[cell]);
+                Destroy(_walls[cell].gameObject);
                 _walls.Remove(cell);
             }
 
@@ -79,7 +103,7 @@ namespace ChessBoss.Game
                     _walls.Add(cell, CreateWall(cell));
         }
 
-        GameObject CreateWall(Cell cell)
+        Renderer CreateWall(Cell cell)
         {
             var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
             wall.name = $"Wall {cell}";
@@ -92,8 +116,9 @@ namespace ChessBoss.Game
                 _tuning.cellSize * _tuning.tileScale,
                 _tuning.wallHeight,
                 RingRadius(cell.Y + 0.5f) * SectorAngle * _tuning.tileScale);
-            Paint(wall.GetComponent<Renderer>(), _tuning.wallColor);
-            return wall;
+            var renderer = wall.GetComponent<Renderer>();
+            Paint(renderer, _tuning.wallColor);
+            return renderer;
         }
 
         public void ShowWarnings(AttackTimeline warnings)

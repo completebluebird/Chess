@@ -26,6 +26,11 @@ namespace ChessBoss.Game
         Vector3[] _hopPath;
         AwakenPiece? _shownPiece;
         PawnMove? _lastPressed;
+        AwakenedStrike _flying;
+        bool _flyingKnight;
+        bool _sweeping;
+        int _sweptCells;
+        float _contactAt;
 
         public PawnMovement Movement => _movement;
         public PawnCombat Combat => _combat;
@@ -103,7 +108,12 @@ namespace ChessBoss.Game
                 : Awakening.Active != AwakenPiece.Knight || AwakenedAttacks.KnightCandidates.Any(_movement.Board.IsBossCell)));
 
             if (_hop.Running)
-                AnimateHop(_hop.Tick(Time.deltaTime));
+            {
+                var progress = _hop.Tick(Time.deltaTime);
+                AnimateHop(progress);
+                if (_flying != null && progress >= _contactAt) Arrive();
+                if (!_hop.Running) Effects.ShowLance(false);
+            }
         }
 
         void ReadPawnInput()
@@ -123,6 +133,7 @@ namespace ChessBoss.Game
             {
                 if (!_moves[i].WasPressedThisFrame()) continue;
 
+                var piece = Awakening.Active;
                 var strike = AwakenedStrikeFor((PawnMove)i);
                 if (strike == null)
                 {
@@ -131,10 +142,44 @@ namespace ChessBoss.Game
                 }
 
                 LastStrike = strike;
-                if (strike.Succeeded) StartHop(strike.Path.Select(_board.CellToWorld).ToArray(), _board.Tuning.awakenTravelTime);
-                if (strike.Damage > 0) _boss.PlayHit();
+                if (strike.Succeeded) Fly(strike, piece == AwakenPiece.Knight, piece == AwakenPiece.Rook && i >= (int)PawnMove.Left);
                 return;
             }
+        }
+
+        // The damage is already dealt in Core. What shows it waits until the piece reaches the boss.
+        void Fly(AwakenedStrike strike, bool knight, bool sweeping)
+        {
+            _flying = strike;
+            _flyingKnight = knight;
+            _sweeping = sweeping;
+            _sweptCells = 1;
+            // A knight that jumps onto the boss touches it halfway and comes back.
+            _contactAt = strike.Path.Count == 3 && strike.Path[0] == strike.Path[2] ? 0.5f : 1;
+            StartHop(strike.Path.Select(_board.CellToWorld).ToArray(), _board.Tuning.awakenTravelTime);
+            if (strike.Path.Count < 2) Arrive();
+            else Effects.ShowLance(true);
+        }
+
+        void Arrive()
+        {
+            var strike = _flying;
+            _flying = null;
+            _sweeping = false;
+            var hit = strike.Damage > 0;
+            if (_flyingKnight)
+            {
+                var floor = transform.position;
+                floor.y = _board.transform.position.y;
+                Effects.Dust(floor);
+            }
+
+            if (_flyingKnight || hit) Effects.Camera.ShakeWeak();
+            if (!hit) return;
+
+            _boss.PlayHit(_board.Tuning.awakenHitstopDuration);
+            Effects.Sparks(_body.bounds.center, _board.Tuning.awakenSparkCount);
+            Effects.Sound(SoundCues.AwakenedStrike);
         }
 
         AwakenedStrike AwakenedStrikeFor(PawnMove key)
@@ -208,7 +253,9 @@ namespace ChessBoss.Game
             if (result == PawnAttackResult.OnCooldown) return;
 
             LastAttack = result;
-            if (result == PawnAttackResult.Hit) _boss.PlayHit();
+            var hit = result == PawnAttackResult.Hit;
+            if (hit) _boss.PlayHit();
+            Effects.Slash(_board.CellToWorld(_combat.AttackCell(side)), hit);
         }
 
         void RefreshAttackMarks()
@@ -224,6 +271,10 @@ namespace ChessBoss.Game
             var along = progress * (_hopPath.Length - 1);
             var segment = Mathf.Min((int)along, _hopPath.Length - 2);
             transform.position = Vector3.Lerp(_hopPath[segment], _hopPath[segment + 1], along - segment) + Vector3.up * (arc * tuning.jumpHeight);
+
+            // A rook circling the boss strikes it from each cell it passes.
+            for (; _sweeping && _sweptCells <= segment; _sweptCells++)
+                Effects.Sparks(_body.bounds.center, tuning.ringSparkCount);
 
             // Stretches on the way up and squashes into the landing, and ends at rest scale.
             var height = 1 + tuning.squash * Mathf.Sin(progress * 2 * Mathf.PI);

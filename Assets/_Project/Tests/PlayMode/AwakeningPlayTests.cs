@@ -221,6 +221,47 @@ namespace ChessBoss.Tests
         }
 
         [UnityTest]
+        public IEnumerator AwakenedHit_ShowsWhenThePieceArrives_WithALongerHitstop()
+        {
+            FillGauge();
+            yield return Press(Key.Digit1);
+
+            yield return Press(Key.W);
+            Assert.AreEqual(1f, Time.timeScale, "nothing shows the hit while the rook is still flying");
+            Assert.IsTrue(_pawn.Effects.LanceShown);
+
+            var stoppedAt = 0f;
+            var limit = Time.realtimeSinceStartup + 2;
+            yield return new WaitUntil(() => Time.timeScale == 0 || Time.realtimeSinceStartup > limit);
+            stoppedAt = Time.realtimeSinceStartup;
+            Assert.AreEqual(0f, Time.timeScale);
+            Assert.That(Vector3.Distance(_board.CellToWorld(_pawn.Movement.Position), _pawn.transform.position), Is.LessThan(0.01f));
+            Assert.Greater(_pawn.Effects.LiveParticles, 0);
+            Assert.IsFalse(_pawn.Effects.LanceShown);
+
+            yield return new WaitUntil(() => Time.timeScale == 1 || Time.realtimeSinceStartup > limit);
+            Assert.AreEqual(_tuning.awakenHitstopDuration, Time.realtimeSinceStartup - stoppedAt, 0.05f);
+        }
+
+        [UnityTest]
+        public IEnumerator PawnAttack_DrawsItsSlash_WithSparksAndHitstopOnlyOnAHit()
+        {
+            yield return Press(Key.Q);
+            Assert.AreEqual(PawnAttackResult.Miss, _pawn.LastAttack);
+            Assert.IsTrue(_pawn.Effects.SlashShown);
+            Assert.AreEqual(0, _pawn.Effects.LiveParticles);
+            Assert.AreEqual(1f, Time.timeScale);
+            yield return new WaitForSecondsRealtime(_tuning.attackCooldown + 0.05f);
+            Assert.IsFalse(_pawn.Effects.SlashShown);
+
+            _pawn.Movement.Land(new Cell(18, 1));
+            yield return Press(Key.E);
+            Assert.AreEqual(PawnAttackResult.Hit, _pawn.LastAttack);
+            Assert.IsTrue(_pawn.Effects.SlashShown);
+            Assert.Greater(_pawn.Effects.LiveParticles, 0);
+        }
+
+        [UnityTest]
         public IEnumerator Camera_FramesFromTheTuning_AndShakesHarderForAStrongHit()
         {
             var view = Camera.main.transform;

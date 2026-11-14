@@ -88,12 +88,15 @@ namespace ChessBoss.Game
             return tuning.slamJumpHeight * rise * drop * beat;
         }
 
-        public void PlayHit()
+        public void PlayHit() => PlayHit(_board.Tuning.hitstopDuration);
+
+        /// <summary>The white flash and the pause of a hit. Awakened attacks pause longer, to feel heavier.</summary>
+        public void PlayHit(float hitstop)
         {
             var tuning = _board.Tuning;
             _board.Paint(_body, tuning.bossFlashColor);
             _flashRemaining = tuning.bossFlashDuration;
-            _hitstopRemaining = tuning.hitstopDuration;
+            _hitstopRemaining = hitstop;
             BattleTime.Stopped = true;
         }
 

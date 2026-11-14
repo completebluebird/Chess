@@ -20,6 +20,7 @@ MonoBehaviour:
   tileScale: 0.96
   prototypeMaterial: {fileID: 2100000, guid: 2f87a7e95abf4b444919f15c6aa400fb, type: 2}
   fadeMaterial: {fileID: 2100000, guid: 4cf6ae94473aad64384649e3910b44f3, type: 2}
+  particleMaterial: {fileID: 2100000, guid: 1fb8934506bf4be43a2351029bd03c7e, type: 2}
   tileLight: {r: 0.85, g: 0.82, b: 0.75, a: 1}
   tileDark: {r: 0.25, g: 0.22, b: 0.2, a: 1}
   attackableColor: {r: 0.25, g: 0.8, b: 0.35, a: 1}
@@ -118,6 +119,30 @@ MonoBehaviour:
   shakeWeak: 0.25
   shakeStrong: 0.8
   shakeDuration: 0.3
+  awakenHitstopDuration: 0.1
+  slashColor: {r: 1, g: 1, b: 1, a: 1}
+  slashTime: 0.15
+  slashWidth: 0.25
+  slashMissWidth: 0.08
+  slashMissReach: 0.6
+  slashBulge: 0.7
+  slashLift: 0.6
+  lanceTime: 0.25
+  lanceWidth: 0.35
+  sparkColor: {r: 1, g: 0.95, b: 0.7, a: 1}
+  sparkCount: 12
+  awakenSparkCount: 30
+  ringSparkCount: 3
+  sparkSpeed: 5
+  sparkSize: 0.12
+  sparkLifetime: 0.35
+  dustColor: {r: 0.75, g: 0.7, b: 0.62, a: 0.8}
+  dustCount: 28
+  dustSpeed: 3.5
+  dustSize: 0.22
+  dustLifetime: 0.5
+  burstGravity: 1
+  burstMaxParticles: 2000
   screenEdgeInner: 0.45
   screenEdgeClearRadius: 0.45
   screenEdgeRaggedness: 0.5

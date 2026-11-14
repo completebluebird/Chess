@@ -149,7 +149,8 @@ namespace ChessBoss.Tests
             var screen = _pawn.Effects.Screen;
             screen.Flash();
             screen.Fire(_tuning.screenFireStrong);
-            screen.LowHealth = true;
+            _pawn.Vitals.Health.TakeDamage(_pawn.Vitals.Health.Max - 1);
+            yield return null;
             yield return null;
             Assert.Greater(screen.FireAlpha, 0f);
             Assert.Greater(screen.LowHealthAlpha, 0f);

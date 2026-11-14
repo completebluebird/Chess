@@ -176,6 +176,12 @@ MonoBehaviour:
   pillarWidth: 0.7
   pillarTime: 0.3
   pillarAlpha: 0.7
+  emberColor: {r: 1, g: 0.55, b: 0.1, a: 1}
+  emberRadius: 0.3
+  emberHeight: 0.7
+  emberLifetime: 0.6
+  emberSize: 0.1
+  emberRate: 18
   screenEdgeInner: 0.45
   screenEdgeClearRadius: 0.45
   screenEdgeRaggedness: 0.5

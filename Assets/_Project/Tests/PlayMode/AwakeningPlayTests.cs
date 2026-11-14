@@ -390,10 +390,6 @@ namespace ChessBoss.Tests
             CollectionAssert.Contains(cues, SoundCues.Impact);
             CollectionAssert.Contains(cues, SoundCues.Hurt);
             CollectionAssert.DoesNotContain(cues, SoundCues.Bite);
-
-            yield return new WaitForSeconds(_tuning.staggerTime + 0.1f);
-            Assert.IsFalse(_pawn.Effects.Pawn.Staggering);
-            Assert.AreEqual(0f, Quaternion.Angle(Quaternion.identity, _pawn.Body.transform.localRotation), 0.01f);
         }
 
         [UnityTest]
@@ -420,9 +416,15 @@ namespace ChessBoss.Tests
             Assert.AreEqual(0f, screen.FireAlpha);
             Assert.That(Mathf.Abs(camera.Roll), Is.InRange(1f, _tuning.hurtTiltDegrees));
             CollectionAssert.Contains(cues, SoundCues.Bite);
+            Assert.IsTrue(_pawn.Effects.Pawn.Staggering);
 
             yield return new WaitForSecondsRealtime(_tuning.hurtTiltReturnTime + 0.05f);
             Assert.AreEqual(0f, camera.Roll);
+
+            // All of this ends long before the boss's first real attack could land and rock the pawn again.
+            yield return new WaitForSeconds(_tuning.staggerTime);
+            Assert.IsFalse(_pawn.Effects.Pawn.Staggering);
+            Assert.AreEqual(0f, Quaternion.Angle(Quaternion.identity, _pawn.Body.transform.localRotation), 0.01f);
         }
 
         [UnityTest]

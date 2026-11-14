@@ -111,5 +111,25 @@ namespace ChessBoss.Game
 
         [Header("Flow")]
         public float battleResultDelay;
+
+        [Header("Screen effects")]
+        [Range(0, 1)] public float screenEdgeInner;
+        public float screenEdgeClearRadius;
+        [Range(0, 1)] public float screenEdgeRaggedness;
+        public float screenEdgeNoiseScale;
+        public Color hurtFlashColor;
+        [Range(0, 1)] public float hurtFlashAlpha;
+        public float hurtFlashTime;
+        public Color screenFireColor;
+        [Range(0, 1)] public float screenFireWeak;
+        [Range(0, 1)] public float screenFireStrong;
+        public float screenFireTime;
+        [Range(0, 1)] public float screenFireFlicker;
+        public float screenFireFlickerSpeed;
+        public Color lowHealthColor;
+        [Range(0, 1)] public float lowHealthFraction;
+        [Range(0, 1)] public float lowHealthAlphaMin;
+        [Range(0, 1)] public float lowHealthAlphaMax;
+        public float lowHealthPulsePeriod;
     }
 }

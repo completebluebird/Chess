@@ -34,6 +34,7 @@ namespace ChessBoss.Game
         public AwakenedAttacks AwakenedAttacks { get; private set; }
         public PawnAttackResult? LastAttack { get; private set; }
         public AwakenedStrike LastStrike { get; private set; }
+        public BattleEffects Effects { get; private set; }
 
         void Awake()
         {
@@ -43,6 +44,8 @@ namespace ChessBoss.Game
             Vitals = new PlayerVitals(tuning.playerHealth, tuning.invulnerableTime, tuning.burnDuration, tuning.burnTickTime, tuning.burnTickDamage);
             transform.position = _board.CellToWorld(start);
             _board.Paint(_body, tuning.pawnColor);
+            Effects = gameObject.AddComponent<BattleEffects>();
+            Effects.Init(_board);
 
             var actions = InputSystem.actions.FindActionMap("Battle", true);
             actions.Enable();

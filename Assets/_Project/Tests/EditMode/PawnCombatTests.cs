@@ -51,6 +51,23 @@ namespace ChessBoss.Tests
         }
 
         [Test]
+        public void UntouchableBoss_IsMissed_AndTakesNoDamage_UntilItCanBeHitAgain()
+        {
+            var combat = Combat(18, 1, out var boss);
+            boss.Untouchable = true;
+
+            Assert.IsFalse(combat.CanHitBoss);
+            Assert.AreEqual(PawnAttackResult.Miss, combat.Attack(PawnAttackSide.Left));
+            boss.TakeDamage(10);
+            Assert.AreEqual(100, boss.Current);
+
+            boss.Untouchable = false;
+            Assert.IsTrue(combat.CanHitBoss);
+            Assert.AreEqual(PawnAttackResult.Hit, combat.Attack(PawnAttackSide.Left));
+            Assert.AreEqual(98, boss.Current);
+        }
+
+        [Test]
         public void AttackableCells_AreBothAttackCells_FromEveryCell()
         {
             foreach (var cell in _board.Cells.Where(_board.IsWalkable))

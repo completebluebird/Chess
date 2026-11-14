@@ -196,6 +196,8 @@ namespace ChessBoss.Core
         {
             _pawn.Land(path[path.Count - 1]);
             _vitals.GrantInvulnerability(_settings.LandingInvulnerable);
+            // The piece still flies and is spent; a boss in the air just isn't there to be hit.
+            if (_boss.Untouchable) damage = 0;
             _boss.TakeDamage(damage);
             _actions.StartCooldown(_settings.AttackCooldown + cooldownRings * _settings.CooldownPerRing);
             return new AwakenedStrike(true, path, ringsMoved, damage);

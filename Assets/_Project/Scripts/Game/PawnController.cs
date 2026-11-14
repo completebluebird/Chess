@@ -94,7 +94,7 @@ namespace ChessBoss.Game
             else if (alive) ReadPawnInput();
 
             ShowAwakening();
-            _boss.SetHittable(alive && (Awakening.Active == null
+            _boss.SetHittable(alive && !_boss.Health.Untouchable && (Awakening.Active == null
                 ? _combat.CanHitBoss
                 : Awakening.Active != AwakenPiece.Knight || AwakenedAttacks.KnightCandidates.Any(_movement.Board.IsBossCell)));
 

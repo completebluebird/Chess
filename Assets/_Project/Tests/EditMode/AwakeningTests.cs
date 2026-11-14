@@ -136,6 +136,21 @@ namespace ChessBoss.Tests
             AssertCooldown(BaseCooldown + moved * CooldownPerRing);
         }
 
+        [Test]
+        public void UntouchableBoss_TakesNoDamage_ButThePieceStillMovesAndIsSpent()
+        {
+            Setup(18, 4);
+            _boss.Untouchable = true;
+
+            var strike = _attacks.Rook(PawnMove.Forward);
+
+            Assert.IsTrue(strike.Succeeded);
+            Assert.AreEqual(0, strike.Damage);
+            Assert.AreEqual(100, _boss.Current);
+            Assert.AreEqual(new Cell(18, 1), _pawn.Position);
+            Assert.IsNull(_awakening.Active);
+        }
+
         [TestCase(1, 12)]
         [TestCase(4, 9)]
         [TestCase(7, 6)]

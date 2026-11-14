@@ -15,6 +15,7 @@ namespace ChessBoss.Game
         bool _stunned;
         Transform _head;
         float _fallenFor;
+        float _airHeight;
 
         Color RestColor => _stunned ? _board.Tuning.bossStunColor : _board.Tuning.bossColor;
 
@@ -60,6 +61,28 @@ namespace ChessBoss.Game
         {
             _stunned = stunned;
             if (_flashRemaining <= 0) _board.Paint(_body, RestColor);
+        }
+
+        /// <summary>Lifts the boss for its slam: 0 on the ground, rising to 1 as it lands.</summary>
+        public void SetAirborne(float progress)
+        {
+            var height = AirHeight(progress);
+            var lift = Vector3.up * (height - _airHeight);
+            _airHeight = height;
+            _body.transform.position += lift;
+            _head.position += lift;
+        }
+
+        // shortcut: a cube that rises, bobs once per wing beat and drops stands in for the jump, the dragon's own animation replaces it in M9.
+        float AirHeight(float progress)
+        {
+            if (progress <= 0) return 0;
+
+            var tuning = _board.Tuning;
+            var rise = Mathf.SmoothStep(0, 1, progress / tuning.slamRiseFraction);
+            var drop = Mathf.Clamp01((1 - progress) / tuning.slamDropFraction);
+            var beat = 1 - tuning.slamFlapDepth * Mathf.Abs(Mathf.Sin(progress * tuning.slamFlaps * Mathf.PI));
+            return tuning.slamJumpHeight * rise * drop * beat;
         }
 
         public void PlayHit()

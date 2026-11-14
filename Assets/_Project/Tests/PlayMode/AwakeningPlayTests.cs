@@ -180,7 +180,7 @@ namespace ChessBoss.Tests
         }
 
         [UnityTest]
-        public IEnumerator BreathThenStun_SlowsOnlyTheEntry_AndHoldsTheGauge()
+        public IEnumerator BreathThenStun_SlowsOnlyTheEntry_AndHoldsTheGauge_ThenTheBossJumpsAndSlams()
         {
             var attacks = Object.FindAnyObjectByType<BossAttackView>().Attacks;
             _boss.Health.TakeDamage(_tuning.bossHealth - (int)(_tuning.bossHealth * _tuning.stunHealthFractions[0]));
@@ -200,11 +200,23 @@ namespace ChessBoss.Tests
             Assert.AreEqual(BossPhase.Stunned, attacks.Phase);
             Assert.AreEqual(gauge, _pawn.Awakening.Gauge, 1e-4f);
 
+            var body = _boss.GetComponentInChildren<Renderer>().transform;
+            var ground = body.position.y;
             limit = Time.realtimeSinceStartup + _tuning.stunDuration + 2;
             yield return new WaitUntil(() => attacks.Phase != BossPhase.Stunned || Time.realtimeSinceStartup > limit);
+            Assert.AreEqual(BossPhase.Slamming, attacks.Phase);
+
+            yield return new WaitForSeconds(_tuning.slamAirTime / 2);
+            Assert.IsTrue(_boss.Health.Untouchable);
+            Assert.Greater(body.position.y, ground + _tuning.slamJumpHeight / 2);
+            Assert.Greater(_pawn.Awakening.Gauge, gauge, "only the stun holds the gauge");
+
+            limit = Time.realtimeSinceStartup + _tuning.slamAirTime + _tuning.boardRings * _tuning.slamRingGap + 2;
+            yield return new WaitUntil(() => attacks.Phase != BossPhase.Slamming || Time.realtimeSinceStartup > limit);
             Assert.AreEqual(BossPhase.Pressing, attacks.Phase);
-            yield return new WaitForSeconds(0.2f);
-            Assert.Greater(_pawn.Awakening.Gauge, gauge);
+            yield return null;
+            Assert.IsFalse(_boss.Health.Untouchable);
+            Assert.AreEqual(ground, body.position.y, 1e-3f);
         }
 
         [UnityTest]

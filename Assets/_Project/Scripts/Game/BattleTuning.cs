@@ -41,6 +41,9 @@ namespace ChessBoss.Game
         public int laserShotsMin;
         public int laserShotsMax;
         public float laserShotGap;
+        public int laserWeight;
+        public int meteorWeight;
+        public int slowBreathWeight;
         public int biteWeight;
         public float meteorWarning;
         public int meteorRadius;
@@ -58,6 +61,8 @@ namespace ChessBoss.Game
         public int breathBeamWidth;
         public int breathWalls;
         public int breathCoverHops;
+        public float slowBreathPrep;
+        public float slowBreathLapTime;
         public int laserDamage;
         public int meteorDamage;
         public int biteDamage;

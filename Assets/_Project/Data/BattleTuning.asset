@@ -44,7 +44,10 @@ MonoBehaviour:
   laserShotsMin: 3
   laserShotsMax: 4
   laserShotGap: 0.4
-  biteWeight: 2
+  laserWeight: 3
+  meteorWeight: 3
+  slowBreathWeight: 2
+  biteWeight: 6
   meteorWarning: 1.5
   meteorRadius: 2
   biteWarning: 0.6
@@ -63,6 +66,8 @@ MonoBehaviour:
   breathBeamWidth: 2
   breathWalls: 2
   breathCoverHops: 5
+  slowBreathPrep: 1
+  slowBreathLapTime: 8
   laserDamage: 10
   meteorDamage: 20
   biteDamage: 30

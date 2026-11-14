@@ -36,6 +36,17 @@ namespace ChessBoss.Core
         public static AttackStep[] SlowBreath(Board board, Random random, BossAttackSettings settings) =>
             Sweep(board, new Cell[0], random, settings.SlowBreathPrep, settings.SlowBreathStepTime, settings);
 
+        /// <summary>A wave leaving the boss as it lands, striking one ring after another out to the edge.</summary>
+        public static AttackStep[] Slam(Board board, int aimSector, BossAttackSettings settings) =>
+            Enumerable.Range(Board.BossRing + 1, board.Rings - 1)
+                .Select(ring =>
+                {
+                    var strike = settings.SlamAirTime + (ring - Board.BossRing - 1) * settings.SlamRingGap;
+                    return new AttackStep(
+                        board.Cells.Where(cell => cell.Y == ring).ToArray(), strike - settings.SlamWarning, strike, aimSector);
+                })
+                .ToArray();
+
         static AttackStep[] Sweep(Board board, IReadOnlyList<Cell> walls, Random random, float prep, float stepTime, BossAttackSettings settings)
         {
             var start = new Cell(random.Next(board.Sectors), 0);
@@ -116,6 +127,7 @@ namespace ChessBoss.Core
         Bite,
         Breath,
         SlowBreath,
+        Slam,
     }
 
     public enum BossPhase
@@ -123,6 +135,7 @@ namespace ChessBoss.Core
         Pressing,
         Breathing,
         Stunned,
+        Slamming,
     }
 
     public sealed class BossAttackSettings
@@ -151,10 +164,14 @@ namespace ChessBoss.Core
         public int BreathCoverHops;
         public float SlowBreathPrep;
         public float SlowBreathStepTime;
+        public float SlamAirTime;
+        public float SlamRingGap;
+        public float SlamWarning;
         public int LaserDamage;
         public int MeteorDamage;
         public int BiteDamage;
         public int BreathDamage;
+        public int SlamDamage;
     }
 
     /// <summary>Starts boss attacks at intervals and applies the strikes that land on the player.</summary>
@@ -169,6 +186,7 @@ namespace ChessBoss.Core
         readonly float[] _breathAtHealth;
         int _nextBreath;
         float _stunLeft;
+        float _airLeft;
         int _laserShotsLeft;
         float _nextLaserShot;
         BossAttackKind _lastBasicAttack;
@@ -177,6 +195,12 @@ namespace ChessBoss.Core
         public AttackTimeline Timeline { get; } = new AttackTimeline();
         public BossAttackKind CurrentAttack { get; private set; }
         public BossPhase Phase { get; private set; }
+
+        /// <summary>The boss has jumped for its slam and can't be hit until it lands.</summary>
+        public bool IsAirborne => _airLeft > 0;
+
+        /// <summary>From 0 at the jump to 1 at the landing, and 0 on the ground.</summary>
+        public float AirProgress => IsAirborne ? 1 - _airLeft / _settings.SlamAirTime : 0;
 
         /// <summary>Strikes that reached the player's cell, including those invulnerability then blocked.</summary>
         public int PlayerHits { get; private set; }
@@ -197,7 +221,7 @@ namespace ChessBoss.Core
                 if (!cells.Contains(_pawn.Position)) return;
 
                 PlayerHits++;
-                _vitals.Hit(DamageOf(CurrentAttack), CurrentAttack != BossAttackKind.Bite);
+                _vitals.Hit(DamageOf(CurrentAttack), CurrentAttack != BossAttackKind.Bite && CurrentAttack != BossAttackKind.Slam);
             };
         }
 
@@ -210,9 +234,16 @@ namespace ChessBoss.Core
             {
                 Timeline.Stop();
                 _laserShotsLeft = 0;
+                Land();
                 Phase = BossPhase.Pressing;
                 _pawn.Board.SetWalls(new Cell[0]);
                 return;
+            }
+
+            if (IsAirborne)
+            {
+                _airLeft -= deltaTime;
+                if (!IsAirborne) Land();
             }
 
             Timeline.Tick(deltaTime);
@@ -238,6 +269,12 @@ namespace ChessBoss.Core
                 _stunLeft -= deltaTime;
                 if (_stunLeft > 0) return;
 
+                StartSlam();
+                return;
+            }
+
+            if (Phase == BossPhase.Slamming)
+            {
                 Phase = BossPhase.Pressing;
                 _idle = 0;
             }
@@ -262,6 +299,7 @@ namespace ChessBoss.Core
                 case BossAttackKind.Laser: return _settings.LaserDamage;
                 case BossAttackKind.Meteor: return _settings.MeteorDamage;
                 case BossAttackKind.Bite: return _settings.BiteDamage;
+                case BossAttackKind.Slam: return _settings.SlamDamage;
                 default: return _settings.BreathDamage;
             }
         }
@@ -287,6 +325,22 @@ namespace ChessBoss.Core
             var breath = BossPatterns.Breath(_pawn.Board, _pawn.Position, _random, _settings);
             _pawn.Board.SetWalls(breath.Walls);
             Timeline.Start(breath.Steps);
+        }
+
+        // The wave is laid out from the jump, so its first ring is warned while the boss is still in the air.
+        void StartSlam()
+        {
+            Phase = BossPhase.Slamming;
+            CurrentAttack = BossAttackKind.Slam;
+            _airLeft = _settings.SlamAirTime;
+            _boss.Untouchable = IsAirborne;
+            Timeline.Start(BossPatterns.Slam(_pawn.Board, _pawn.Position.X, _settings));
+        }
+
+        void Land()
+        {
+            _airLeft = 0;
+            _boss.Untouchable = false;
         }
 
         void StartNextAttack()

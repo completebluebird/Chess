@@ -44,10 +44,14 @@ namespace ChessBoss.Game
                 BreathCoverHops = tuning.breathCoverHops,
                 SlowBreathPrep = tuning.slowBreathPrep,
                 SlowBreathStepTime = tuning.slowBreathLapTime / tuning.boardSectors,
+                SlamAirTime = tuning.slamAirTime,
+                SlamRingGap = tuning.slamRingGap,
+                SlamWarning = tuning.slamWarning,
                 LaserDamage = tuning.laserDamage,
                 MeteorDamage = tuning.meteorDamage,
                 BiteDamage = tuning.biteDamage,
                 BreathDamage = tuning.breathDamage,
+                SlamDamage = tuning.slamDamage,
             });
         }
 
@@ -57,6 +61,7 @@ namespace ChessBoss.Game
             _board.ShowWarnings(Attacks.Timeline);
             _board.ShowWalls();
             ShowPhase();
+            _boss.SetAirborne(Attacks.AirProgress);
             if (Attacks.Phase != BossPhase.Stunned) _boss.Face(_pawn.Movement.Position.X, Attacks.AimSector);
         }
 

@@ -68,10 +68,19 @@ MonoBehaviour:
   breathCoverHops: 5
   slowBreathPrep: 1
   slowBreathLapTime: 8
+  slamAirTime: 2.4
+  slamRingGap: 0.4
+  slamWarning: 0.6
+  slamJumpHeight: 4
+  slamRiseFraction: 0.15
+  slamDropFraction: 0.08
+  slamFlaps: 3
+  slamFlapDepth: 0.12
   laserDamage: 10
   meteorDamage: 20
   biteDamage: 30
   breathDamage: 10
+  slamDamage: 15
   wallHeight: 1.5
   wallColor: {r: 0.35, g: 0.38, b: 0.45, a: 1}
   startCell: {x: 18, y: 4}

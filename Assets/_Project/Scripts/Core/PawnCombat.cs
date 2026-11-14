@@ -41,7 +41,7 @@ namespace ChessBoss.Core
         }
 
         public bool CanHitBoss =>
-            !_boss.IsDead
+            !_boss.IsDead && !_boss.Untouchable
             && (_movement.Board.IsBossCell(AttackCell(PawnAttackSide.Left))
                 || _movement.Board.IsBossCell(AttackCell(PawnAttackSide.Right)));
 
@@ -50,7 +50,7 @@ namespace ChessBoss.Core
 
         public PawnAttackResult Attack(PawnAttackSide side)
         {
-            if (_boss.IsDead || !_movement.Board.IsBossCell(AttackCell(side))) return PawnAttackResult.Miss;
+            if (_boss.IsDead || _boss.Untouchable || !_movement.Board.IsBossCell(AttackCell(side))) return PawnAttackResult.Miss;
 
             _boss.TakeDamage(_damage);
             return PawnAttackResult.Hit;

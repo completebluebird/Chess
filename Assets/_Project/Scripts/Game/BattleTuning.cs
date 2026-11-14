@@ -63,10 +63,19 @@ namespace ChessBoss.Game
         public int breathCoverHops;
         public float slowBreathPrep;
         public float slowBreathLapTime;
+        public float slamAirTime;
+        public float slamRingGap;
+        public float slamWarning;
+        public float slamJumpHeight;
+        [Range(0.01f, 0.5f)] public float slamRiseFraction;
+        [Range(0.01f, 0.5f)] public float slamDropFraction;
+        public int slamFlaps;
+        public float slamFlapDepth;
         public int laserDamage;
         public int meteorDamage;
         public int biteDamage;
         public int breathDamage;
+        public int slamDamage;
         public float wallHeight;
         public Color wallColor;
 

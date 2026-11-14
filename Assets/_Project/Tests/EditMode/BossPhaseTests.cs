@@ -37,11 +37,16 @@ namespace ChessBoss.Tests
             BreathCoverHops = 5,
             SlowBreathPrep = 1f,
             SlowBreathStepTime = 8f / 24,
+            SlamAirTime = 2.4f,
+            SlamRingGap = 0.4f,
+            SlamWarning = 0.6f,
+            SlamDamage = 15,
         };
 
         Board _board;
         Health _boss;
         PlayerVitals _vitals;
+        PawnMovement _pawn;
         BossAttacks _attacks;
 
         [SetUp]
@@ -50,7 +55,14 @@ namespace ChessBoss.Tests
             _board = new Board(24, 8);
             _boss = new Health(100);
             _vitals = PlayerVitalsTests.Vitals();
-            _attacks = new BossAttacks(new PawnMovement(_board, new Cell(18, 4)), _boss, _vitals, new Random(1), Settings);
+            _pawn = new PawnMovement(_board, new Cell(18, 4));
+            _attacks = new BossAttacks(_pawn, _boss, _vitals, new Random(1), Settings);
+        }
+
+        void RunToTheSlam()
+        {
+            _boss.TakeDamage(30);
+            RunUntil(() => _attacks.Phase == BossPhase.Slamming);
         }
 
         void RunUntil(Func<bool> done, float limit = 60)
@@ -122,7 +134,7 @@ namespace ChessBoss.Tests
         }
 
         [Test]
-        public void BreathEnding_StunsTheBoss_WithNoAttacksOrWalls_ThenPressingResumes()
+        public void BreathEnding_StunsTheBoss_WithNoAttacksOrWalls_ThenTheSlam_ThenPressingResumes()
         {
             _boss.TakeDamage(30);
             RunUntil(() => _attacks.Phase == BossPhase.Stunned);
@@ -140,7 +152,11 @@ namespace ChessBoss.Tests
 
             Assert.AreEqual(hits, _attacks.PlayerHits);
 
-            RunUntil(() => _attacks.Phase == BossPhase.Pressing, Step * 4);
+            RunUntil(() => _attacks.Phase != BossPhase.Stunned, Step * 4);
+            Assert.AreEqual(BossPhase.Slamming, _attacks.Phase);
+            Assert.AreEqual(BossAttackKind.Slam, _attacks.CurrentAttack);
+
+            RunUntil(() => _attacks.Phase == BossPhase.Pressing);
             Assert.IsFalse(_attacks.Timeline.IsRunning, "the usual gap comes before the next attack");
             RunUntil(() => _attacks.Timeline.IsRunning, Settings.Interval + Step * 2);
             Assert.AreNotEqual(BossAttackKind.Breath, _attacks.CurrentAttack);
@@ -160,6 +176,7 @@ namespace ChessBoss.Tests
         {
             _boss.TakeDamage(30);
             RunThroughStun();
+            RunUntil(() => !_attacks.IsAirborne);
 
             _boss.TakeDamage(30);
 
@@ -176,7 +193,7 @@ namespace ChessBoss.Tests
         }
 
         [Test]
-        public void ThresholdReachedDuringTheStun_BreathesRightAfterIt()
+        public void ThresholdReachedDuringTheStun_BreathesRightAfterTheSlam()
         {
             _boss.TakeDamage(30);
             RunUntil(() => _attacks.Phase == BossPhase.Stunned);
@@ -186,7 +203,129 @@ namespace ChessBoss.Tests
             Assert.AreEqual(BossPhase.Stunned, _attacks.Phase);
 
             RunUntil(() => _attacks.Phase != BossPhase.Stunned);
+            Assert.AreEqual(BossPhase.Slamming, _attacks.Phase);
+
+            RunUntil(() => _attacks.Phase != BossPhase.Slamming);
             Assert.AreEqual(BossPhase.Breathing, _attacks.Phase);
+        }
+
+        [Test]
+        public void Slam_KeepsTheBossUntouchable_FromTheJumpUntilItLands()
+        {
+            RunToTheSlam();
+            var health = _boss.Current;
+
+            for (var elapsed = Step; elapsed < Settings.SlamAirTime - Step; elapsed += Step)
+            {
+                Assert.IsTrue(_attacks.IsAirborne);
+                Assert.IsTrue(_boss.Untouchable);
+                _boss.TakeDamage(5);
+                Assert.AreEqual(health, _boss.Current);
+                _attacks.Tick(Step);
+            }
+
+            RunUntil(() => !_attacks.IsAirborne, Step * 4);
+            Assert.AreEqual(BossPhase.Slamming, _attacks.Phase, "the wave is still spreading");
+            Assert.IsFalse(_boss.Untouchable);
+            _boss.TakeDamage(5);
+            Assert.AreEqual(health - 5, _boss.Current);
+        }
+
+        [Test]
+        public void Slam_AirProgress_RisesFromZeroToOne_ThenIsZeroOnTheGround()
+        {
+            Assert.AreEqual(0f, _attacks.AirProgress);
+            RunToTheSlam();
+
+            _attacks.Tick(Settings.SlamAirTime / 2);
+            Assert.AreEqual(0.5f, _attacks.AirProgress, 0.05f);
+
+            _attacks.Tick(Settings.SlamAirTime / 2 + Step);
+            Assert.AreEqual(0f, _attacks.AirProgress);
+        }
+
+        [Test]
+        public void Slam_StrikesEveryRingInTurn_FromTheBossOutward_StartingAsItLands()
+        {
+            RunToTheSlam();
+            var strikes = new List<(float time, int[] rings, int cells)>();
+            var time = 0f;
+            _attacks.Timeline.Struck += cells =>
+                strikes.Add((time, cells.Select(cell => cell.Y).Distinct().ToArray(), cells.Count));
+
+            while (_attacks.Phase == BossPhase.Slamming)
+            {
+                _attacks.Tick(Step);
+                time += Step;
+            }
+
+            Assert.AreEqual(_board.Rings - 1, strikes.Count);
+            for (var i = 0; i < strikes.Count; i++)
+            {
+                CollectionAssert.AreEqual(new[] { i + 1 }, strikes[i].rings);
+                Assert.AreEqual(_board.Sectors, strikes[i].cells);
+                Assert.AreEqual(Settings.SlamAirTime + i * Settings.SlamRingGap, strikes[i].time, Step * 1.5f);
+            }
+        }
+
+        [Test]
+        public void Slam_WarnsEachRing_AheadOfItsStrike()
+        {
+            var steps = BossPatterns.Slam(_board, 18, Settings);
+
+            foreach (var step in steps)
+            {
+                Assert.AreEqual(Settings.SlamWarning, step.StrikeTime - step.WarningStart, 1e-4f);
+                Assert.AreEqual(18, step.AimSector);
+            }
+        }
+
+        [Test]
+        public void Slam_StandingStill_HitsOnce_ForItsDamage_WithoutBurning()
+        {
+            RunToTheSlam();
+            var hits = _attacks.PlayerHits;
+            var health = _vitals.Health.Current;
+            Assert.IsFalse(_vitals.IsBurning, "the breath's burn ran out during the stun");
+
+            RunUntil(() => _attacks.Phase != BossPhase.Slamming);
+
+            Assert.AreEqual(hits + 1, _attacks.PlayerHits);
+            Assert.AreEqual(health - Settings.SlamDamage, _vitals.Health.Current);
+            Assert.IsFalse(_vitals.IsBurning);
+        }
+
+        [Test]
+        public void Slam_IsDodged_ByHoppingInward_RightAfterTheInnerRingIsStruck()
+        {
+            const float MoveCooldown = 0.2f;
+            Assert.Greater(Settings.SlamRingGap, MoveCooldown, "the wave must leave time for the hop");
+            RunToTheSlam();
+            var hits = _attacks.PlayerHits;
+            _attacks.Timeline.Struck += cells =>
+            {
+                if (cells[0].Y == _pawn.Position.Y - 1) Assert.IsTrue(_pawn.TryMove(PawnMove.Forward));
+            };
+
+            RunUntil(() => _attacks.Phase != BossPhase.Slamming);
+
+            Assert.AreEqual(hits, _attacks.PlayerHits);
+            Assert.AreEqual(new Cell(18, 3), _pawn.Position);
+        }
+
+        [Test]
+        public void DeadPlayer_DuringTheJump_LandsTheBossAndEndsTheSlam()
+        {
+            RunToTheSlam();
+            Assert.IsTrue(_boss.Untouchable);
+
+            _vitals.Health.TakeDamage(_vitals.Health.Max);
+            _attacks.Tick(Step);
+
+            Assert.AreEqual(BossPhase.Pressing, _attacks.Phase);
+            Assert.IsFalse(_attacks.IsAirborne);
+            Assert.IsFalse(_boss.Untouchable);
+            Assert.IsFalse(_attacks.Timeline.IsRunning);
         }
 
         [Test]

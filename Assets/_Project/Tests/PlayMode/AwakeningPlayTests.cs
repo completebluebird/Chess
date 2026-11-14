@@ -479,6 +479,30 @@ namespace ChessBoss.Tests
         }
 
         [UnityTest]
+        public IEnumerator BreathHaze_PeaksAsTheBeamPassesThePawn_AndClearsWhenTheBreathEnds()
+        {
+            var attacks = Object.FindAnyObjectByType<BossAttackView>().Attacks;
+            var haze = _pawn.Effects.Haze;
+            yield return null;
+            Assert.AreEqual(0f, haze.Strength);
+
+            _boss.Health.TakeDamage(_tuning.bossHealth - (int)(_tuning.bossHealth * _tuning.stunHealthFractions[0]));
+            var strongest = 0f;
+            var limit = Time.realtimeSinceStartup + 15;
+            while (attacks.Phase != BossPhase.Stunned && Time.realtimeSinceStartup < limit)
+            {
+                yield return null;
+                strongest = Mathf.Max(strongest, haze.Strength);
+            }
+
+            Assert.AreEqual(BossPhase.Stunned, attacks.Phase);
+            Assert.Greater(strongest, 0.9f, "the beam went over the pawn's sector, sheltered or not");
+
+            yield return new WaitForSecondsRealtime(_tuning.hazeFadeTime + 0.1f);
+            Assert.AreEqual(0f, haze.Strength);
+        }
+
+        [UnityTest]
         public IEnumerator Camera_FramesFromTheTuning_AndShakesHarderForAStrongHit()
         {
             var view = Camera.main.transform;

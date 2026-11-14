@@ -127,6 +127,8 @@ namespace ChessBoss.Game
         public float awakenZoomInTime;
         public float awakenZoomOutTime;
         public float awakenZoomReturnTime;
+        public float hurtTiltDegrees;
+        public float hurtTiltReturnTime;
 
         [Header("Hit effects")]
         public float awakenHitstopDuration;
@@ -151,6 +153,15 @@ namespace ChessBoss.Game
         public float dustSpeed;
         public float dustSize;
         public float dustLifetime;
+        public Color impactFireColor;
+        public int impactFireCount;
+        public float impactFireSpeed;
+        public float impactFireSize;
+        public float impactFireLifetime;
+        public int impactDustCount;
+        public float staggerDegrees;
+        public float staggerTime;
+        public float staggerSwings;
         public float burstGravity;
         public int burstMaxParticles;
 

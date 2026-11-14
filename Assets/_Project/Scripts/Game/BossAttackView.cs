@@ -53,6 +53,8 @@ namespace ChessBoss.Game
                 BreathDamage = tuning.breathDamage,
                 SlamDamage = tuning.slamDamage,
             });
+            Attacks.Timeline.Struck += cells => _pawn.Effects.Impact(Attacks.CurrentAttack, cells);
+            _pawn.Vitals.Hurt += () => _pawn.Effects.PlayerHurt(Attacks.CurrentAttack);
         }
 
         void Update()

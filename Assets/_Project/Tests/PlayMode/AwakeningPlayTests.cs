@@ -371,6 +371,76 @@ namespace ChessBoss.Tests
         }
 
         [UnityTest]
+        public IEnumerator BossAttackLanding_ShowsItsImpact_AndTheHitOnThePawn()
+        {
+            var attacks = Object.FindAnyObjectByType<BossAttackView>().Attacks;
+            var cues = new System.Collections.Generic.List<string>();
+            _pawn.Effects.SoundCued += cues.Add;
+
+            var limit = Time.realtimeSinceStartup + 15;
+            yield return new WaitUntil(() => attacks.PlayerHits > 0 || Time.realtimeSinceStartup > limit);
+            Assert.Greater(attacks.PlayerHits, 0, "standing still, the first attack lands");
+            yield return null;
+
+            // Far from the boss the first attack is a laser, a meteor or the slow breath: all fire.
+            Assert.Greater(_pawn.Effects.LiveParticles, 0);
+            Assert.Greater(_pawn.Effects.Screen.FireAlpha, 0f);
+            Assert.AreEqual(0f, _pawn.Effects.Screen.FlashAlpha);
+            Assert.IsTrue(_pawn.Effects.Pawn.Staggering);
+            CollectionAssert.Contains(cues, SoundCues.Impact);
+            CollectionAssert.Contains(cues, SoundCues.Hurt);
+            CollectionAssert.DoesNotContain(cues, SoundCues.Bite);
+        }
+
+        [UnityTest]
+        public IEnumerator EachHit_FeelsDifferent_BiteFlashesAndTilts_LaserOnlyBurns()
+        {
+            var screen = _pawn.Effects.Screen;
+            var camera = _pawn.Effects.Camera;
+            var cues = new System.Collections.Generic.List<string>();
+            _pawn.Effects.SoundCued += cues.Add;
+
+            _pawn.Effects.PlayerHurt(BossAttackKind.Laser);
+            yield return null;
+            yield return null;
+            Assert.Greater(screen.FireAlpha, 0f);
+            Assert.AreEqual(0f, screen.FlashAlpha);
+            Assert.AreEqual(0f, camera.Roll);
+            yield return new WaitForSecondsRealtime(_tuning.screenFireTime + 0.05f);
+            Assert.AreEqual(0f, screen.FireAlpha);
+
+            _pawn.Effects.PlayerHurt(BossAttackKind.Bite);
+            yield return null;
+            yield return null;
+            Assert.Greater(screen.FlashAlpha, 0f);
+            Assert.AreEqual(0f, screen.FireAlpha);
+            Assert.That(Mathf.Abs(camera.Roll), Is.InRange(1f, _tuning.hurtTiltDegrees));
+            CollectionAssert.Contains(cues, SoundCues.Bite);
+            Assert.IsTrue(_pawn.Effects.Pawn.Staggering);
+
+            yield return new WaitForSecondsRealtime(_tuning.hurtTiltReturnTime + 0.05f);
+            Assert.AreEqual(0f, camera.Roll);
+
+            // All of this ends long before the boss's first real attack could land and rock the pawn again.
+            yield return new WaitForSeconds(_tuning.staggerTime);
+            Assert.IsFalse(_pawn.Effects.Pawn.Staggering);
+            Assert.AreEqual(0f, Quaternion.Angle(Quaternion.identity, _pawn.Body.transform.localRotation), 0.01f);
+        }
+
+        [UnityTest]
+        public IEnumerator DodgedMeteor_StillShowsItsImpact()
+        {
+            var away = _board.Board.Step(_pawn.Movement.Position, _board.Board.Sectors / 2, 0);
+
+            _pawn.Effects.Impact(BossAttackKind.Meteor, new[] { away });
+            yield return null;
+
+            Assert.Greater(_pawn.Effects.LiveParticles, 0);
+            Assert.AreEqual(0f, _pawn.Effects.Screen.FireAlpha);
+            Assert.IsFalse(_pawn.Effects.Pawn.Staggering);
+        }
+
+        [UnityTest]
         public IEnumerator Camera_FramesFromTheTuning_AndShakesHarderForAStrongHit()
         {
             var view = Camera.main.transform;
@@ -413,8 +483,7 @@ namespace ChessBoss.Tests
             yield return null;
             yield return null;
             var wallCell = _board.Board.Walls.First();
-            var wall = _board.Walls.First();
-            Assert.AreEqual(1f, _board.AlphaOf(wall));
+            var wall = _board.Walls.OrderBy(shown => Vector3.Distance(shown.transform.position, _board.CellToWorld(wallCell))).First();
 
             // In front of the wall, so the camera behind the pawn looks through it.
             var inFront = new Cell(wallCell.X, wallCell.Y - 1);

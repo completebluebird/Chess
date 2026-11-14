@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using ChessBoss.Core;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -14,6 +16,7 @@ namespace ChessBoss.Game
         const int SlashPoints = 8;
 
         BattleTuning _tuning;
+        BoardView _board;
         PawnController _pawn;
         Vector3 _center;
         ParticleSystem _bursts;
@@ -34,6 +37,7 @@ namespace ChessBoss.Game
         public void Init(BoardView board, PawnController pawn, BossView boss)
         {
             _tuning = board.Tuning;
+            _board = board;
             _pawn = pawn;
             _center = board.transform.position;
             Screen = new GameObject("ScreenEffects").AddComponent<ScreenEffects>();
@@ -100,6 +104,73 @@ namespace ChessBoss.Game
         /// <summary>Dust thrown outward along the floor.</summary>
         public void Dust(Vector3 at) =>
             Burst(at, _tuning.dustColor, _tuning.dustCount, _tuning.dustSpeed, _tuning.dustSize, _tuning.dustLifetime, true);
+
+        /// <summary>A boss strike landing. It shows whether or not the player was on the cells.</summary>
+        public void Impact(BossAttackKind kind, IReadOnlyList<Cell> cells)
+        {
+            switch (kind)
+            {
+                case BossAttackKind.Laser:
+                    Camera.ShakeWeak();
+                    Flames(cells);
+                    break;
+                case BossAttackKind.Meteor:
+                    Camera.ShakeStrong();
+                    Flames(cells);
+                    break;
+                case BossAttackKind.Bite:
+                    Camera.ShakeStrong();
+                    break;
+                case BossAttackKind.Slam:
+                    // The landing is the heavy one; the wave's later rings rumble.
+                    if (cells[0].Y == Board.BossRing + 1) Camera.ShakeStrong();
+                    else Camera.ShakeWeak();
+                    foreach (var cell in cells)
+                        Burst(_board.CellToWorld(cell), _tuning.dustColor, _tuning.impactDustCount, _tuning.dustSpeed, _tuning.dustSize, _tuning.dustLifetime, true);
+                    break;
+                default:
+                    // The breaths don't shake: the haze tells where the beam is.
+                    Flames(cells);
+                    break;
+            }
+
+            Sound(SoundCues.Impact);
+        }
+
+        /// <summary>The player was hit. Each attack is felt differently, so the cause reads without looking at the floor.</summary>
+        public void PlayerHurt(BossAttackKind kind)
+        {
+            Pawn.Stagger();
+            switch (kind)
+            {
+                case BossAttackKind.Laser:
+                    Screen.Fire(_tuning.screenFireWeak);
+                    break;
+                case BossAttackKind.Meteor:
+                    Camera.Tilt();
+                    Screen.Fire(_tuning.screenFireWeak);
+                    break;
+                case BossAttackKind.Bite:
+                    Sound(SoundCues.Bite);
+                    Screen.Flash();
+                    Camera.Tilt();
+                    break;
+                case BossAttackKind.Slam:
+                    Camera.Tilt();
+                    break;
+                default:
+                    Screen.Fire(_tuning.screenFireStrong);
+                    break;
+            }
+
+            Sound(SoundCues.Hurt);
+        }
+
+        void Flames(IReadOnlyList<Cell> cells)
+        {
+            foreach (var cell in cells)
+                Burst(_board.CellToWorld(cell), _tuning.impactFireColor, _tuning.impactFireCount, _tuning.impactFireSpeed, _tuning.impactFireSize, _tuning.impactFireLifetime, false);
+        }
 
         public void Burst(Vector3 at, Color color, int count, float speed, float size, float lifetime, bool alongFloor)
         {

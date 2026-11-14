@@ -20,9 +20,14 @@ namespace ChessBoss.Game
         bool _awakened;
         float _zoomFrom = 1;
         float _zoomClock;
+        float _tilt;
+        float _tiltLeft;
 
         /// <summary>The camera's distance from the pawn as a multiple of its usual one.</summary>
         public float Zoom { get; private set; } = 1;
+
+        /// <summary>How far the view is rolled, in degrees.</summary>
+        public float Roll => _camera.Lens.Dutch;
 
         public void Init(BoardView board, PawnController pawn, BossView boss)
         {
@@ -58,6 +63,13 @@ namespace ChessBoss.Game
 
         public void ShakeStrong() => _impulse.GenerateImpulseWithForce(_board.Tuning.shakeStrong);
 
+        /// <summary>Rolls the view a little and lets it come back. Small and short, because the floor has to be read again right after a hit.</summary>
+        public void Tilt()
+        {
+            _tilt = _board.Tuning.hurtTiltDegrees * (Random.value < 0.5f ? -1 : 1);
+            _tiltLeft = _board.Tuning.hurtTiltReturnTime;
+        }
+
         void LateUpdate()
         {
             // shortcut: a shake caught by a pause is muted and has run out by the resume, instead of freezing mid-shake; revisit if pausing mid-hit looks wrong.
@@ -66,6 +78,8 @@ namespace ChessBoss.Game
 
             ZoomForAwakening();
             FadeOccluders();
+            _tiltLeft = Mathf.Max(0, _tiltLeft - Time.unscaledDeltaTime);
+            _camera.Lens.Dutch = _tilt * Mathf.SmoothStep(0, 1, _tiltLeft / _board.Tuning.hurtTiltReturnTime);
         }
 
         // In fast on the awakening, out to wider than usual while it waits, and back when it ends however it ends.
